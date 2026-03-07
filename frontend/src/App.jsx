@@ -1,47 +1,26 @@
 import React from 'react';
-import './App.css';
-// ดึงไอคอนมาจาก react-icons
-import { FaSignInAlt, FaRegUser } from "react-icons/fa";
-import { MdOutlineAdminPanelSettings } from "react-icons/md";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import './App.css'; // อย่าลืม import CSS ที่เราทำไว้ตอนแรก
+
+// นำเข้าไฟล์หน้าต่างๆ ที่เราเพิ่งสร้าง
+import Login from './pages/Login';
+import UserPage from './pages/UserPage';
+import AdminPage from './pages/AdminPage';
 
 function App() {
-  
-  // ฟังก์ชันจำลองเมื่อกดปุ่ม (เดี๋ยวเราค่อยมาเขียนระบบเชื่อมหน้าทีหลัง)
-  const handleUserLogin = () => {
-    alert("กำลังไปหน้า Login สำหรับผู้ใช้งาน...");
-  };
-
-  const handleAdminLogin = () => {
-    alert("กำลังไปหน้า Login สำหรับผู้ดูแลระบบ...");
-  };
-
   return (
-    <div className="login-container">
-      <div className="login-card">
+    <BrowserRouter>
+      <Routes>
+        {/* ถ้าเข้ามาหน้าแรก (/) ให้โชว์หน้า Login */}
+        <Route path="/" element={<Login />} />
         
-        {/* โลโก้ด้านบน */}
-        <div className="login-logo">
-          <FaSignInAlt />
-        </div>
+        {/* ถ้า URL เป็น /user ให้โชว์หน้า UserPage */}
+        <Route path="/user" element={<UserPage />} />
         
-        {/* ข้อความหัวข้อ */}
-        <div className="login-title">ระบบยืม-คืนอุปกรณ์คณะวิศวกรรมศาสตร์</div>
-        <div className="login-subtitle">เลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</div>
-
-        {/* ปุ่มเข้าสู่ระบบผู้ใช้งาน */}
-        <button className="login-btn" onClick={handleUserLogin}>
-          <FaRegUser className="btn-icon" />
-          เข้าสู่ระบบผู้ใช้งาน
-        </button>
-
-        {/* ปุ่มเข้าสู่ระบบผู้ดูแลระบบ */}
-        <button className="login-btn" onClick={handleAdminLogin}>
-          <MdOutlineAdminPanelSettings className="btn-icon" />
-          เข้าสู่ระบบผู้ดูแลระบบ
-        </button>
-
-      </div>
-    </div>
+        {/* ถ้า URL เป็น /admin ให้โชว์หน้า AdminPage */}
+        <Route path="/admin" element={<AdminPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

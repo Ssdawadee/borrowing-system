@@ -80,3 +80,87 @@ body, html {
   margin-right: 12px;
   font-size: 20px;
 }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  margin-top: 10px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  color: #555; /* สีเทาเข้ม */
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 15px;
+  border: none; /* เอาเส้นขอบออก */
+  border-radius: 8px;
+  background-color: #f2f2f2; /* พื้นหลังสีเทาอ่อนตามรูป */
+  font-size: 13px;
+  outline: none;
+  color: #333;
+  transition: background-color 0.3s;
+}
+
+.input-group input:focus {
+  background-color: #e8e8e8; /* สีเทาเข้มขึ้นนิดนึงตอนกดพิมพ์ */
+}
+
+.login-submit-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 5px;
+  background-color: #7b1113;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 500;
+}
+
+.login-submit-btn:hover {
+  background-color: #5a0c0e;
+}
+
+.login-footer {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #888;
+}
+
+.login-footer a {
+  color: #7b1113;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ปุ่มย้อนกลับแบบเนียนๆ ซ่อนไว้ด้านล่างสุดเผื่อกดผิด */
+.back-btn {
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 15px;
+  text-decoration: underline;
+}
+
+.back-btn:hover {
+  color: #777;
+}
