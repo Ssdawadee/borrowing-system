@@ -7,8 +7,32 @@ function Login() {
   const [currentView, setCurrentView] = useState('selection');
   const navigate = useNavigate(); // สร้างตัวแปรไว้สั่งเปลี่ยนหน้า
 
-  const handleAdminLoginSubmit = () => {
-    navigate('/admin');
+const handleAdminLoginSubmit = async () => {
+    if (!adminUsername || !adminPassword) return alert("กรุณากรอกข้อมูลให้ครบ");
+
+    try {
+      // อย่าลืมเช็ค URL ให้ตรงกับพอร์ต 5000 ของคุณด้วยนะครับ
+      const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: adminUsername, 
+          password: adminPassword 
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`ยินดีต้อนรับ Admin: ${data.user.fullName}`);
+        localStorage.setItem('user', JSON.stringify(data.user)); // เก็บ session ไว้ในเครื่อง
+        navigate('/admin'); // วาร์ปไปหน้า Dashboard ของ Admin
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    }
   };
 
   const [email, setEmail] = useState('');

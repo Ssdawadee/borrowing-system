@@ -43,4 +43,26 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// --- 3. API สำหรับเข้าสู่ระบบ (Admin) ---
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        // ค้นหาใน DB โดยบังคับว่า role ต้องเป็น 'admin' เท่านั้น
+        const [rows] = await db.query("SELECT * FROM users WHERE student_id = ? AND role = 'admin'", [username]);
+        
+        if (rows.length === 0) return res.status(401).json({ error: "ไม่พบบัญชีผู้ดูแลระบบนี้ หรือคุณไม่มีสิทธิ์" });
+
+        const admin = rows[0];
+        const isMatch = await bcrypt.compare(password, admin.password);
+
+        if (isMatch) {
+            res.json({ message: "เข้าสู่ระบบ Admin สำเร็จ", user: { id: admin.user_id, fullName: admin.full_name, role: admin.role } });
+        } else {
+            res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
+        }
+    } catch (error) {
+        console.error("Admin Login Error:", error);
+        res.status(500).json({ error: "Server ขัดข้อง" });
+    }
+});
 app.listen(5000, () => console.log("Backend runs on port 5000"));
