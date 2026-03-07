@@ -7,13 +7,6 @@ function Login() {
   const [currentView, setCurrentView] = useState('selection');
   const navigate = useNavigate(); // สร้างตัวแปรไว้สั่งเปลี่ยนหน้า
 
-  // ฟังก์ชันจำลองการกดปุ่มเข้าสู่ระบบ
-  const handleUserLoginSubmit = () => {
-    // เดี๋ยวอนาคตเราจะเขียนเช็ครหัสผ่านตรงนี้
-    // ตอนนี้ให้จำลองว่าเข้าระบบผ่าน แล้วเด้งไปหน้า /user เลย
-    navigate('/user'); 
-  };
-
   const handleAdminLoginSubmit = () => {
     navigate('/admin');
   };
@@ -26,6 +19,60 @@ function Login() {
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
+// 1. ฟังก์ชันสำหรับ Login ผู้ใช้งาน
+  const handleUserLoginSubmit = async (e) => {
+    // ใช้ email state ที่เรามีอยู่แล้วนั่นแหละครับ แต่ส่งไปในชื่อ studentId
+    if (!email || !password) return alert("กรุณากรอกข้อมูลให้ครบ");
+
+    try {
+      const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          studentId: email, // รับค่าจากช่อง "อีเมล/รหัสนักศึกษา"
+          password: password 
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`ยินดีต้อนรับคุณ ${data.user.fullName}`);
+        // เก็บข้อมูลผู้ใช้ไว้ในเครื่อง (Optional)
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/user'); // ไปหน้ายืมของ
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (อย่าลืมรัน Backend นะครับ)");
+    }
+  };
+
+  // 2. ฟังก์ชันสำหรับ Register
+  const handleRegisterSubmit = async () => {
+    if (!studentId || !fullName || !password) return alert("กรุณากรอกข้อมูลให้ครบ");
+    if (password !== confirmPassword) return alert("รหัสผ่านไม่ตรงกัน");
+
+    try {
+      const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, fullName, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ");
+        setCurrentView('userLogin'); // สลับไปหน้า Login อัตโนมัติ
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    }
+  };
   return (
     <div className="login-container">
       {currentView === 'selection' && (
@@ -192,15 +239,7 @@ function Login() {
             <button 
               type="button" 
               className="login-submit-btn" 
-              onClick={() => {
-                // เช็คเบื้องต้นว่ารหัสตรงกันไหม
-                if(password !== confirmPassword) {
-                  alert("รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง");
-                  return;
-                }
-                alert(`ลงทะเบียนสำเร็จคุณ ${fullName}! กำลังกลับไปหน้า Login...`);
-                setCurrentView('userLogin');
-              }}
+              onClick={handleRegisterSubmit} 
             >
               ลงทะเบียน
             </button>

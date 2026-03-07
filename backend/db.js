@@ -1,21 +1,14 @@
-// ไฟล์ db.js
 const mysql = require('mysql2');
 
-// ตั้งค่าการเชื่อมต่อ
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '962548', // รหัสผ่านที่เราตั้งไว้ในขั้นตอนที่ 1
-  database: 'equipment_system'
+  password: '962548',
+  database: 'equipment_system',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-// ทำการเชื่อมต่อ
-db.connect((err) => {
-  if (err) {
-    console.error('เชื่อมต่อฐานข้อมูลล้มเหลว:', err);
-    return;
-  }
-  console.log('เชื่อมต่อฐานข้อมูล MySQL สำเร็จแล้ว! 🎉');
-});
-
-module.exports = db;
+// ส่งออกแบบ Promise เพื่อให้ server.js ใช้ await ได้
+module.exports = db.promise();
