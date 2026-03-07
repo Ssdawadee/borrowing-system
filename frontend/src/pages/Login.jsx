@@ -18,6 +18,14 @@ function Login() {
     navigate('/admin');
   };
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [studentId, setStudentId] = useState(''); // สำหรับหน้า Register
+  const [fullName, setFullName] = useState('');  // สำหรับหน้า Register
+  const [confirmPassword, setConfirmPassword] = useState(''); // ตัวนี้สำหรับยืนยันรหัส
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+
   return (
     <div className="login-container">
       {currentView === 'selection' && (
@@ -45,12 +53,22 @@ function Login() {
 
           <form className="login-form">
             <div className="input-group">
-              <label>อีเมล / รหัสนักศึกษา</label>
-              <input type="text" placeholder="your.email@university.edu" />
+            <label>อีเมล / รหัสนักศึกษา</label>
+              <input 
+                type="text" 
+                placeholder="your.email@university.edu" 
+                value={email} // ผูกค่ากับ State
+                onChange={(e) => setEmail(e.target.value)} // พิมพ์แล้วให้ไปเก็บใน State
+              />
             </div>
             <div className="input-group">
               <label>รหัสผ่าน</label>
-              <input type="password" placeholder="ใส่รหัสผ่านของคุณ" />
+              <input 
+                type="password" 
+                placeholder="ใส่รหัสผ่านของคุณ" 
+                value={password} // ผูกค่ากับ State
+                onChange={(e) => setPassword(e.target.value)} 
+              />
             </div>
             
             <button type="button" className="login-submit-btn" onClick={handleUserLoginSubmit}>
@@ -82,11 +100,21 @@ function Login() {
           <form className="login-form">
             <div className="input-group">
               <label>Username (Admin)</label>
-              <input type="text" placeholder="ชื่อผู้ใช้งาน" />
+              <input 
+                type="text" 
+                placeholder="ชื่อผู้ใช้งาน" 
+                value={adminUsername}
+                onChange={(e) => setAdminUsername(e.target.value)}
+              />
             </div>
             <div className="input-group">
               <label>Password</label>
-              <input type="password" placeholder="รหัสผ่าน" />
+              <input 
+                type="password" 
+                placeholder="รหัสผ่าน" 
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+              />
             </div>
             
             <button type="button" className="login-submit-btn" onClick={handleAdminLoginSubmit}>
@@ -113,30 +141,64 @@ function Login() {
           <form className="login-form">
             <div className="input-group">
               <label>รหัสประจำตัวนักศึกษา</label>
-              <input type="text" placeholder="b1234567890" />
+              <input 
+                type="text" 
+                placeholder="b1234567890" 
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+              />
             </div>
+            
             <div className="input-group">
               <label>ชื่อเต็ม</label>
-              <input type="text" placeholder="จอห์น สมิธ" />
+              <input 
+                type="text" 
+                placeholder="จอห์น สมิธ" 
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
             </div>
+
             <div className="input-group">
               <label>อีเมล</label>
-              <input type="email" placeholder="your.email@university.edu" />
+              <input 
+                type="email" 
+                placeholder="your.email@university.edu" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
+
             <div className="input-group">
               <label>รหัสผ่าน</label>
-              <input type="password" placeholder="ใส่รหัสผ่านของคุณ" />
+              <input 
+                type="password" 
+                placeholder="ใส่รหัสผ่านของคุณ" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
+
             <div className="input-group">
               <label>ยืนยันรหัสผ่าน</label>
-              <input type="password" placeholder="ยืนยันรหัสผ่านของคุณ" />
+              <input 
+                type="password" 
+                placeholder="ยืนยันรหัสผ่านของคุณ" 
+                value={confirmPassword} // เพิ่ม State ตัวใหม่ไว้เก็บค่าการยืนยัน
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
             </div>
             
             <button 
               type="button" 
               className="login-submit-btn" 
               onClick={() => {
-                alert("จำลองการลงทะเบียนสำเร็จ! กลับไปหน้าเข้าสู่ระบบ");
+                // เช็คเบื้องต้นว่ารหัสตรงกันไหม
+                if(password !== confirmPassword) {
+                  alert("รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง");
+                  return;
+                }
+                alert(`ลงทะเบียนสำเร็จคุณ ${fullName}! กำลังกลับไปหน้า Login...`);
                 setCurrentView('userLogin');
               }}
             >
@@ -144,7 +206,6 @@ function Login() {
             </button>
           </form>
 
-          {/* ปุ่มกลับไปหน้าเข้าสู่ระบบ */}
           <div className="login-footer">
             มีบัญชีอยู่แล้วใช่ไหม?{' '}
             <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('userLogin'); }}>
