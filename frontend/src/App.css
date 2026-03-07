@@ -1,42 +1,82 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* นำเข้าฟอนต์ Kanit เพื่อให้ภาษาไทยดูสวยงาม */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Kanit', sans-serif;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* พื้นหลังของหน้า Login */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  /* ใส่ภาพพื้นหลัง (ผมใส่ภาพตึกจำลองไว้ คุณสามารถเปลี่ยนลิงก์ภาพทีหลังได้) */
+  background: linear-gradient(135deg, rgba(123, 17, 19, 0.85) 0%, rgba(0,0,0,0.5) 100%), 
+              url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+}
+
+/* กล่องสีขาวตรงกลาง */
+.login-card {
+  background-color: white;
+  padding: 50px 40px;
+  border-radius: 24px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
   text-align: center;
+  width: 90%;
+  max-width: 450px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.login-logo {
+  color: #7b1113; /* สีแดงเลือดหมู */
+  font-size: 50px;
+  margin-bottom: 15px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.login-title {
+  color: #7b1113;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 5px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
+.login-subtitle {
   color: #888;
+  font-size: 14px;
+  margin-bottom: 35px;
+}
+
+/* ปุ่มกด */
+.login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 15px;
+  background-color: #7b1113;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+  background-color: #5a0c0e;
+}
+
+.btn-icon {
+  margin-right: 12px;
+  font-size: 20px;
 }

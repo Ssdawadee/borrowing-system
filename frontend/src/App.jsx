@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import './App.css';
+// ดึงไอคอนมาจาก react-icons
+import { FaSignInAlt, FaRegUser } from "react-icons/fa";
+import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 function App() {
-  const [count, setCount] = useState(0)
+  
+  // ฟังก์ชันจำลองเมื่อกดปุ่ม (เดี๋ยวเราค่อยมาเขียนระบบเชื่อมหน้าทีหลัง)
+  const handleUserLogin = () => {
+    alert("กำลังไปหน้า Login สำหรับผู้ใช้งาน...");
+  };
+
+  const handleAdminLogin = () => {
+    alert("กำลังไปหน้า Login สำหรับผู้ดูแลระบบ...");
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="login-container">
+      <div className="login-card">
+        
+        {/* โลโก้ด้านบน */}
+        <div className="login-logo">
+          <FaSignInAlt />
+        </div>
+        
+        {/* ข้อความหัวข้อ */}
+        <div className="login-title">ระบบยืม-คืนอุปกรณ์คณะวิศวกรรมศาสตร์</div>
+        <div className="login-subtitle">เลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</div>
+
+        {/* ปุ่มเข้าสู่ระบบผู้ใช้งาน */}
+        <button className="login-btn" onClick={handleUserLogin}>
+          <FaRegUser className="btn-icon" />
+          เข้าสู่ระบบผู้ใช้งาน
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+        {/* ปุ่มเข้าสู่ระบบผู้ดูแลระบบ */}
+        <button className="login-btn" onClick={handleAdminLogin}>
+          <MdOutlineAdminPanelSettings className="btn-icon" />
+          เข้าสู่ระบบผู้ดูแลระบบ
+        </button>
+
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
