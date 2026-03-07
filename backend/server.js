@@ -33,7 +33,11 @@ app.post('/api/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
-            res.json({ message: "เข้าสู่ระบบสำเร็จ", user: { id: user.user_id, fullName: user.full_name, role: user.role } });
+            res.json({ message: "เข้าสู่ระบบสำเร็จ", user: 
+                {   id: user.user_id, 
+                    studentId: user.student_id,
+                    fullName: user.full_name, 
+                    role: user.role } });
         } else {
             res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
         }

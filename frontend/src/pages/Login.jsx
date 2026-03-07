@@ -1,17 +1,88 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // เพิ่มตัวช่วยเปลี่ยนหน้า
+import { useNavigate } from 'react-router-dom';
 import { FaSignInAlt, FaRegUser, FaRegUserCircle } from "react-icons/fa";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
+import Swal from 'sweetalert2'; // นำเข้า SweetAlert2 ตรงนี้
 
 function Login() {
   const [currentView, setCurrentView] = useState('selection');
-  const navigate = useNavigate(); // สร้างตัวแปรไว้สั่งเปลี่ยนหน้า
+  const navigate = useNavigate();
 
-const handleAdminLoginSubmit = async () => {
-    if (!adminUsername || !adminPassword) return alert("กรุณากรอกข้อมูลให้ครบ");
+  // State สำหรับเก็บข้อมูลฟอร์ม
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [studentId, setStudentId] = useState(''); 
+  const [fullName, setFullName] = useState('');  
+  const [confirmPassword, setConfirmPassword] = useState(''); 
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+
+  // 1. ฟังก์ชันสำหรับ Login ผู้ใช้งาน (User)
+  const handleUserLoginSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      return Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอกอีเมล/รหัสนักศึกษา และรหัสผ่านให้ครบครับ',
+        confirmButtonColor: '#7b1113'
+      });
+    }
 
     try {
-      // อย่าลืมเช็ค URL ให้ตรงกับพอร์ต 5000 ของคุณด้วยนะครับ
+      const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          studentId: email, 
+          password: password 
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'เข้าสู่ระบบสำเร็จ!',
+          text: `ยินดีต้อนรับคุณ ${data.user.fullName}`,
+          showConfirmButton: false,
+          timer: 1500
+        }).then(() => {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          navigate('/user'); 
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'เข้าสู่ระบบล้มเหลว',
+          text: data.error,
+          confirmButtonColor: '#7b1113'
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'การเชื่อมต่อขัดข้อง',
+        text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (อย่าลืมเปิดรัน Backend และตั้ง Port เป็น Public นะครับ)',
+        confirmButtonColor: '#7b1113'
+      });
+    }
+  };
+
+  // 2. ฟังก์ชันสำหรับ Login ผู้ดูแลระบบ (Admin)
+  const handleAdminLoginSubmit = async (e) => {
+    e.preventDefault();
+    if (!adminUsername || !adminPassword) {
+      return Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอก Username และ Password ให้ครบครับ',
+        confirmButtonColor: '#7b1113'
+      });
+    }
+
+    try {
       const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,59 +95,54 @@ const handleAdminLoginSubmit = async () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`ยินดีต้อนรับ Admin: ${data.user.fullName}`);
-        localStorage.setItem('user', JSON.stringify(data.user)); // เก็บ session ไว้ในเครื่อง
-        navigate('/admin'); // วาร์ปไปหน้า Dashboard ของ Admin
+        Swal.fire({
+          icon: 'success',
+          title: 'ยืนยันตัวตนสำเร็จ!',
+          text: `ยินดีต้อนรับผู้ดูแลระบบ: ${data.user.fullName}`,
+          showConfirmButton: false,
+          timer: 1500
+        }).then(() => {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          navigate('/admin');
+        });
       } else {
-        alert(data.error);
+        Swal.fire({
+          icon: 'error',
+          title: 'สิทธิ์การเข้าถึงถูกปฏิเสธ',
+          text: data.error,
+          confirmButtonColor: '#7b1113'
+        });
       }
     } catch (error) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
-    }
-  };
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [studentId, setStudentId] = useState(''); // สำหรับหน้า Register
-  const [fullName, setFullName] = useState('');  // สำหรับหน้า Register
-  const [confirmPassword, setConfirmPassword] = useState(''); // ตัวนี้สำหรับยืนยันรหัส
-  const [adminUsername, setAdminUsername] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-
-// 1. ฟังก์ชันสำหรับ Login ผู้ใช้งาน
-  const handleUserLoginSubmit = async (e) => {
-    // ใช้ email state ที่เรามีอยู่แล้วนั่นแหละครับ แต่ส่งไปในชื่อ studentId
-    if (!email || !password) return alert("กรุณากรอกข้อมูลให้ครบ");
-
-    try {
-      const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          studentId: email, // รับค่าจากช่อง "อีเมล/รหัสนักศึกษา"
-          password: password 
-        })
+      Swal.fire({
+        icon: 'error',
+        title: 'การเชื่อมต่อขัดข้อง',
+        text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+        confirmButtonColor: '#7b1113'
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`ยินดีต้อนรับคุณ ${data.user.fullName}`);
-        // เก็บข้อมูลผู้ใช้ไว้ในเครื่อง (Optional)
-        localStorage.setItem('user', JSON.stringify(data.user));
-        navigate('/user'); // ไปหน้ายืมของ
-      } else {
-        alert(data.error);
-      }
-    } catch (error) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (อย่าลืมรัน Backend นะครับ)");
     }
   };
 
-  // 2. ฟังก์ชันสำหรับ Register
-  const handleRegisterSubmit = async () => {
-    if (!studentId || !fullName || !password) return alert("กรุณากรอกข้อมูลให้ครบ");
-    if (password !== confirmPassword) return alert("รหัสผ่านไม่ตรงกัน");
+  // 3. ฟังก์ชันสำหรับ Register
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    if (!studentId || !fullName || !password || !confirmPassword) {
+      return Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอกข้อมูลให้ครบทุกช่องครับ',
+        confirmButtonColor: '#7b1113'
+      });
+    }
+    
+    if (password !== confirmPassword) {
+      return Swal.fire({
+        icon: 'error',
+        title: 'รหัสผ่านไม่ตรงกัน',
+        text: 'กรุณาตรวจสอบรหัสผ่านและการยืนยันรหัสผ่านอีกครั้ง',
+        confirmButtonColor: '#7b1113'
+      });
+    }
 
     try {
       const response = await fetch('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/register', {
@@ -88,15 +154,37 @@ const handleAdminLoginSubmit = async () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ");
-        setCurrentView('userLogin'); // สลับไปหน้า Login อัตโนมัติ
+        Swal.fire({
+          icon: 'success',
+          title: 'ลงทะเบียนสำเร็จ!',
+          text: 'สร้างบัญชีเรียบร้อยแล้ว กรุณาเข้าสู่ระบบ',
+          confirmButtonColor: '#28a745'
+        }).then(() => {
+          // ล้างค่าฟอร์มหลังจากสมัครเสร็จ
+          setStudentId('');
+          setFullName('');
+          setPassword('');
+          setConfirmPassword('');
+          setCurrentView('userLogin');
+        });
       } else {
-        alert(data.error);
+        Swal.fire({
+          icon: 'error',
+          title: 'ลงทะเบียนไม่สำเร็จ',
+          text: data.error,
+          confirmButtonColor: '#7b1113'
+        });
       }
     } catch (error) {
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      Swal.fire({
+        icon: 'error',
+        title: 'การเชื่อมต่อขัดข้อง',
+        text: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์',
+        confirmButtonColor: '#7b1113'
+      });
     }
   };
+
   return (
     <div className="login-container">
       {currentView === 'selection' && (
@@ -128,8 +216,8 @@ const handleAdminLoginSubmit = async () => {
               <input 
                 type="text" 
                 placeholder="your.email@university.edu" 
-                value={email} // ผูกค่ากับ State
-                onChange={(e) => setEmail(e.target.value)} // พิมพ์แล้วให้ไปเก็บใน State
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
               />
             </div>
             <div className="input-group">
@@ -137,7 +225,7 @@ const handleAdminLoginSubmit = async () => {
               <input 
                 type="password" 
                 placeholder="ใส่รหัสผ่านของคุณ" 
-                value={password} // ผูกค่ากับ State
+                value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
               />
             </div>
@@ -147,7 +235,6 @@ const handleAdminLoginSubmit = async () => {
             </button>
           </form>
 
-          {/* ข้อความลงทะเบียน */}
           <div className="login-footer">
             ยังไม่มีบัญชีใช่ไหม?{' '}
             <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('register'); }}>
@@ -155,7 +242,6 @@ const handleAdminLoginSubmit = async () => {
             </a>
           </div>
 
-          {/* ปุ่มย้อนกลับ (ในรูปไม่มี แต่ผมใส่ไว้ให้เล็กๆ ด้านล่าง เผื่อผู้ใช้กดเข้ามาผิดครับ) */}
           <button className="back-btn" onClick={() => setCurrentView('selection')}>
             กลับไปหน้าเลือกประเภท
           </button>
@@ -198,9 +284,7 @@ const handleAdminLoginSubmit = async () => {
           </button>
         </div>
       )}
-      {/* ------------------------------------------------------------------
-          เงื่อนไขที่ 3: หน้าลงทะเบียน (สร้างบัญชีใหม่)
-          ------------------------------------------------------------------ */}
+
       {currentView === 'register' && (
         <div className="login-card">
           <div className="login-logo">
@@ -231,16 +315,6 @@ const handleAdminLoginSubmit = async () => {
             </div>
 
             <div className="input-group">
-              <label>อีเมล</label>
-              <input 
-                type="email" 
-                placeholder="your.email@university.edu" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="input-group">
               <label>รหัสผ่าน</label>
               <input 
                 type="password" 
@@ -255,7 +329,7 @@ const handleAdminLoginSubmit = async () => {
               <input 
                 type="password" 
                 placeholder="ยืนยันรหัสผ่านของคุณ" 
-                value={confirmPassword} // เพิ่ม State ตัวใหม่ไว้เก็บค่าการยืนยัน
+                value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
