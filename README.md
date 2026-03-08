@@ -1,7 +1,7 @@
 <h1 align="center">📦 Borrowing Student Club Equipment System</h1>
 
 <p align="center">
-Web Application สำหรับจัดการการยืม–คืนอุปกรณ์ภายในชมรม
+Web Application สำหรับจัดการการยืม–คืนอุปกรณ์
 </p>
 
 ---
