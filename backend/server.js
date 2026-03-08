@@ -69,4 +69,84 @@ app.post('/api/admin/login', async (req, res) => {
         res.status(500).json({ error: "Server ขัดข้อง" });
     }
 });
+
+// ==========================================
+// API สำหรับรับคำขอยืมอุปกรณ์จากหน้า User
+// ==========================================
+app.post('/api/borrow', async (req, res) => {  // <-- เติม async ตรงนี้
+  const { equipment_id, user_id, borrow_date, return_date, reason } = req.body;
+
+  if (!equipment_id || !user_id || !borrow_date || !return_date || !reason) {
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+  }
+
+  const sql = `
+    INSERT INTO borrow_requests (equipment_id, user_id, borrow_date, return_date, reason) 
+    VALUES (?, ?, ?, ?, ?)
+  `;
+
+  try {
+    // เปลี่ยนมาใช้ await เหมือน API ตัวอื่นๆ
+    const [result] = await db.query(sql, [equipment_id, user_id, borrow_date, return_date, reason]);
+    
+    // ตอบกลับหน้าเว็บทันทีเมื่อเสร็จ!
+    res.status(201).json({ message: 'บันทึกคำขอยืมสำเร็จ!', requestId: result.insertId });
+  } catch (error) {
+    console.error('Error inserting borrow request:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดที่ฝั่งเซิร์ฟเวอร์' });
+  }
+});
+
+// ==========================================
+// API ดึงข้อมูลประวัติการยืมของ User แต่ละคน
+// ==========================================
+app.get('/api/my-requests/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    // ดึงข้อมูลจากตาราง borrow_requests เชื่อมกับ equipments เพื่อเอาชื่ออุปกรณ์
+    const sql = `
+      SELECT r.*, e.name as equipment_name 
+      FROM borrow_requests r 
+      JOIN equipments e ON r.equipment_id = e.id 
+      WHERE r.user_id = ? 
+      ORDER BY r.borrow_date DESC
+    `;
+    const [rows] = await db.query(sql, [userId]);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching my requests:", error);
+    res.status(500).json({ error: "ไม่สามารถดึงข้อมูลได้" });
+  }
+});
+
+// ==========================================
+// API สำหรับทำรายการคืนอุปกรณ์
+// ==========================================
+app.put('/api/return/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // อัปเดตสถานะในตารางเป็น 'returned'
+    const sql = "UPDATE borrow_requests SET status = 'returned' WHERE id = ?";
+    await db.query(sql, [id]);
+    res.json({ message: 'บันทึกการคืนอุปกรณ์สำเร็จ' });
+  } catch (error) {
+    console.error("Error returning equipment:", error);
+    res.status(500).json({ error: "เกิดข้อผิดพลาดในการอัปเดตข้อมูล" });
+  }
+});
+
+// API สำหรับดึงรายการอุปกรณ์ทั้งหมดไปแสดงหน้าเว็บ
+app.get('/api/equipments', async (req, res) => { // <-- เติม async ตรงนี้
+  try {
+    const sql = "SELECT * FROM equipments"; 
+    // ใช้ await แบบเดียวกับ API ตัวอื่นๆ
+    const [rows] = await db.query(sql); 
+    
+    // ส่งข้อมูลกลับไปให้ Frontend
+    res.json(rows);
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการดึงข้อมูลอุปกรณ์:", error);
+    res.status(500).json({ error: "ไม่สามารถดึงข้อมูลจากฐานข้อมูลได้" });
+  }
+});
 app.listen(5000, () => console.log("Backend runs on port 5000"));
