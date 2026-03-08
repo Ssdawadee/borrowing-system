@@ -1,14 +1,24 @@
-```md
-# Borrowing Student Club Equipment System
+<h1 align="center">📦 Borrowing Student Club Equipment System</h1>
 
-## Software Requirements Specification (SRS)
+<p align="center">
+Web Application สำหรับจัดการการยืม–คืนอุปกรณ์ภายในชมรม
+</p>
 
-**Project Name:** Borrowing Student Club Equipment System  
-**Date:** 21 February 2026  
-**Version:** 1.0  
-**By:** เดี๋ยวแก้ตอนพรีเซนต์  
+---
 
-### Members
+## 📄 Software Requirements Specification (SRS)
+
+| Field | Detail |
+|------|------|
+| Project Name | Borrowing Student Club Equipment System |
+| Version | 1.0 |
+| Date | 21 February 2026 |
+| Prepared By | Project Team |
+
+---
+
+## 👥 Members
+
 - นาย สุกฤษฎิ์ คลายคลี่ 6730300604
 - นางสาว ศดาวดี ทรวดทรง 6730300558
 - นางสาว อุษา อุปายโกศล 6730300671
@@ -17,121 +27,87 @@
 
 ---
 
-# Design Prototype
+## 🎨 Design Prototype
 
-Figma Design:
+ระบบ UI ถูกออกแบบโดยใช้ **Figma**
 
+🔗 Figma Design  
 https://www.figma.com/design/d4FDjq7YZdyXxx2e21fG81/Design-Prototype-using-Figma?node-id=1-3&t=8OUYq2LAwGq2lVc5-1
 
-Frontend implementation should follow this design.
+Frontend ของระบบควรพัฒนาโดย **อ้างอิงจาก Design นี้**
 
 ---
 
-# Revision History
+## 📝 Revision History
 
-| Version | Author | Version Description | Date Completed |
-|--------|-------|--------------------|---------------|
-| 1.0 | เดี๋ยวแก้ตอนพรีเซนต์ | First Draft | 24 Feb 2026 |
-
----
-
-# Review History
-
-| Approving Party | Version Approved | Signature | Date |
-|----------------|-----------------|----------|------|
-| | | | |
+| Version | Author | Description | Date |
+|------|------|-------------|------|
+| 1.0 | Project Team | First Draft | 24 Feb 2026 |
 
 ---
 
-# Approval History
+## 📘 Introduction
 
-| Reviewer | Version Reviewed | Signature | Date |
-|---------|------------------|----------|------|
-| | | | |
+### Product Scope
 
----
-
-# 1. Introduction
-
-## 1.1 Product Scope
 ระบบ **Student Club Equipment Borrowing System** เป็น Web Application  
-สำหรับจัดการการยืม–คืนอุปกรณ์ภายในชมรม  
-เพื่อช่วยลดความผิดพลาดจากการจดบันทึกแบบกระดาษ  
-และสามารถตรวจสอบสถานะการยืมได้อย่างชัดเจน
+สำหรับจัดการ **การยืมและคืนอุปกรณ์ภายในชมรม**
+
+ช่วยให้
+
+- ลดความผิดพลาดจากการจดบันทึกแบบกระดาษ
+- ตรวจสอบสถานะการยืมได้ง่าย
+- จัดการอุปกรณ์ได้อย่างเป็นระบบ
 
 ---
 
-## 1.2 Intended Users
-- สมาชิกชมรม (**User**)  
-- ผู้ดูแลอุปกรณ์ (**Admin**)
+## 👤 Intended Users
+
+ระบบถูกออกแบบสำหรับผู้ใช้งาน 2 ประเภท
+
+### User
+นักศึกษาที่ต้องการยืมอุปกรณ์
+
+### Admin
+ผู้ดูแลระบบและอุปกรณ์
 
 ---
 
-## 1.3 General Overview
-ระบบประกอบด้วย
+## ⚙ Functional Requirements
 
-- ระบบสมัครสมาชิก
-- ระบบเข้าสู่ระบบ
-- การยื่นคำขอยืมอุปกรณ์
-- การอนุมัติคำขอ
-- การบันทึกการคืนอุปกรณ์
-
----
-
-# 2. Functional Requirements
-
-## 2.1 User Functions
+### User Functions
 
 User สามารถ
 
-1. สมัครสมาชิก (**Register**)  
-2. เข้าสู่ระบบ (**Login**)  
-3. ดูรายการอุปกรณ์ (**View Equipment**)  
-4. ยื่นคำขอยืมอุปกรณ์ (**Submit Borrow Request**)  
-5. ตรวจสอบสถานะการยืม (**View Borrow Status**)  
-6. คืนอุปกรณ์ (**Return Equipment**)
+- สมัครสมาชิก (Register)
+- เข้าสู่ระบบ (Login)
+- ดูรายการอุปกรณ์
+- ยื่นคำขอยืมอุปกรณ์
+- ตรวจสอบสถานะการยืม
+- คืนอุปกรณ์
 
 ---
 
-## 2.2 Admin Functions
+### Admin Functions
 
 Admin สามารถ
 
-1. เข้าสู่ระบบ (**Login**)  
-2. เพิ่ม / แก้ไข / ลบอุปกรณ์ (**Manage Equipment**)  
-3. อนุมัติคำขอยืม (**Approve Request**)  
-4. ปฏิเสธคำขอ (**Reject Request**)  
-5. บันทึกการคืนอุปกรณ์ (**Record Return**)  
-6. ดูรายงานการยืม (**View Report**)
+- เพิ่ม / แก้ไข / ลบอุปกรณ์
+- อนุมัติคำขอยืม
+- ปฏิเสธคำขอยืม
+- บันทึกการคืนอุปกรณ์
+- ดูรายงานการยืม
 
 ---
 
-# 3. External Interface Requirements
+## 💻 System Requirements
 
-## 3.1 User Interface
-เป็น **Web Application**  
-รองรับการแสดงผลบน
+### Hardware
 
-- Desktop
-- Laptop
-- Mobile
-
-มีหน้า
-
-- User Dashboard
-- Admin Dashboard
-
----
-
-## 3.2 Hardware Requirements
-อุปกรณ์ที่มี
-
-- Web Browser
+- Computer / Laptop / Smartphone
 - Internet Connection
 
----
-
-## 3.3 Software Requirements
+### Software
 
 Frontend
 - HTML
@@ -147,35 +123,31 @@ Database
 
 ---
 
-# 4. Non-Functional Requirements
+## 🔐 Non-Functional Requirements
 
-## 4.1 Security
+### Security
 
 - ผู้ใช้ต้อง **Login ก่อนใช้งาน**
 - User ไม่สามารถอนุมัติคำขอได้
-- Admin เท่านั้นที่สามารถจัดการอุปกรณ์ได้
+- Admin เท่านั้นที่จัดการอุปกรณ์ได้
 
----
-
-## 4.2 Performance
+### Performance
 
 ระบบควรตอบสนองภายใน
 
-**3 วินาที**
+**≤ 3 วินาที**
 
----
-
-## 4.3 Usability
+### Usability
 
 ระบบต้อง
 
 - ใช้งานง่าย
-- เข้าใจง่าย
 - UI ชัดเจน
+- เข้าใจได้ทันที
 
 ---
 
-# 5. Definitions
+## 📚 Definitions
 
 | Term | Meaning |
 |-----|--------|
@@ -184,4 +156,9 @@ Database
 | Admin | ผู้ดูแลระบบ |
 | Borrow Request | คำขอยืมอุปกรณ์ |
 | CRUD | Create, Read, Update, Delete |
-```
+
+---
+
+<p align="center">
+✨ Borrowing Student Club Equipment System
+</p>
