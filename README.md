@@ -1,3 +1,4 @@
+```md
 # Borrowing Student Club Equipment System
 
 ## Software Requirements Specification (SRS)
@@ -16,6 +17,16 @@
 
 ---
 
+# Design Prototype
+
+Figma Design:
+
+https://www.figma.com/design/d4FDjq7YZdyXxx2e21fG81/Design-Prototype-using-Figma?node-id=1-3&t=8OUYq2LAwGq2lVc5-1
+
+Frontend implementation should follow this design.
+
+---
+
 # Revision History
 
 | Version | Author | Version Description | Date Completed |
@@ -29,7 +40,6 @@
 | Approving Party | Version Approved | Signature | Date |
 |----------------|-----------------|----------|------|
 | | | | |
-| | | | |
 
 ---
 
@@ -38,22 +48,28 @@
 | Reviewer | Version Reviewed | Signature | Date |
 |---------|------------------|----------|------|
 | | | | |
-| | | | |
 
 ---
 
 # 1. Introduction
 
 ## 1.1 Product Scope
-ระบบ **Student Club Equipment Borrowing System** เป็น Web Application สำหรับจัดการการยืม–คืนอุปกรณ์ภายในชมรม  
-เพื่อช่วยลดความผิดพลาดจากการจดบันทึกแบบกระดาษ และสามารถตรวจสอบสถานะการยืมได้อย่างชัดเจน
+ระบบ **Student Club Equipment Borrowing System** เป็น Web Application  
+สำหรับจัดการการยืม–คืนอุปกรณ์ภายในชมรม  
+เพื่อช่วยลดความผิดพลาดจากการจดบันทึกแบบกระดาษ  
+และสามารถตรวจสอบสถานะการยืมได้อย่างชัดเจน
+
+---
 
 ## 1.2 Intended Users
 - สมาชิกชมรม (**User**)  
 - ผู้ดูแลอุปกรณ์ (**Admin**)
 
+---
+
 ## 1.3 General Overview
 ระบบประกอบด้วย
+
 - ระบบสมัครสมาชิก
 - ระบบเข้าสู่ระบบ
 - การยื่นคำขอยืมอุปกรณ์
@@ -65,6 +81,7 @@
 # 2. Functional Requirements
 
 ## 2.1 User Functions
+
 User สามารถ
 
 1. สมัครสมาชิก (**Register**)  
@@ -74,7 +91,10 @@ User สามารถ
 5. ตรวจสอบสถานะการยืม (**View Borrow Status**)  
 6. คืนอุปกรณ์ (**Return Equipment**)
 
+---
+
 ## 2.2 Admin Functions
+
 Admin สามารถ
 
 1. เข้าสู่ระบบ (**Login**)  
@@ -89,34 +109,69 @@ Admin สามารถ
 # 3. External Interface Requirements
 
 ## 3.1 User Interface
-เป็น **Web Application** รองรับการแสดงผลบนคอมพิวเตอร์และมือถือ  
-มีหน้า **Dashboard สำหรับ User และ Admin**
+เป็น **Web Application**  
+รองรับการแสดงผลบน
+
+- Desktop
+- Laptop
+- Mobile
+
+มีหน้า
+
+- User Dashboard
+- Admin Dashboard
+
+---
 
 ## 3.2 Hardware Requirements
-อุปกรณ์ที่มี **Web Browser** และสามารถเชื่อมต่ออินเทอร์เน็ตได้
+อุปกรณ์ที่มี
+
+- Web Browser
+- Internet Connection
+
+---
 
 ## 3.3 Software Requirements
-พัฒนาโดยใช้
 
-- HTML  
-- CSS  
-- JavaScript  
-- Database: MySQL
+Frontend
+- HTML
+- CSS
+- JavaScript
+
+Backend
+- Node.js
+- Express
+
+Database
+- MySQL
 
 ---
 
 # 4. Non-Functional Requirements
 
 ## 4.1 Security
+
 - ผู้ใช้ต้อง **Login ก่อนใช้งาน**
 - User ไม่สามารถอนุมัติคำขอได้
 - Admin เท่านั้นที่สามารถจัดการอุปกรณ์ได้
 
+---
+
 ## 4.2 Performance
-ระบบควรตอบสนองภายใน **3 วินาที**
+
+ระบบควรตอบสนองภายใน
+
+**3 วินาที**
+
+---
 
 ## 4.3 Usability
-ระบบต้อง **ใช้งานง่าย และเข้าใจได้ทันที**
+
+ระบบต้อง
+
+- ใช้งานง่าย
+- เข้าใจง่าย
+- UI ชัดเจน
 
 ---
 
@@ -129,3 +184,4 @@ Admin สามารถ
 | Admin | ผู้ดูแลระบบ |
 | Borrow Request | คำขอยืมอุปกรณ์ |
 | CRUD | Create, Read, Update, Delete |
+```
