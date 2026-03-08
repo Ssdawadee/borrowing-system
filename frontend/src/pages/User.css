@@ -108,7 +108,7 @@
   padding: 40px;
   overflow-y: auto;
   /* ใส่ภาพพื้นหลังตึกถ้ามี หรือใช้สีทึบ/ไล่สีไปก่อน */
-  background: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80') center/cover;
+  background: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('https://www.eng.src.ku.ac.th/wp-content/uploads/2022/08/banner_Robot_1024x480_edit-01-1024x480.jpg') center/cover;
 }
 
 .welcome-section h1 {

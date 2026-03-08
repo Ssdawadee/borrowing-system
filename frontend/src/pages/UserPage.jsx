@@ -85,18 +85,6 @@ function User() {
     navigate('/');
   };
 
-  // --- ข้อมูลจำลองสำหรับหน้าอุปกรณ์ (Mock Data) ---
-  /*const equipments = [
-    { id: 1, name: 'กล้องถ่ายภาพ', desc: 'Canon EOS 80D พร้อมเลนส์ 18-135 มม.', category: 'อุปกรณ์ถ่ายภาพ', available: 3, total: 5, img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=80' },
-    { id: 2, name: 'ขาตั้งกล้อง', desc: 'ขาตั้งกล้องอลูมิเนียมระดับมืออาชีพ', category: 'อุปกรณ์ถ่ายภาพ', available: 8, total: 10, img: 'https://images.unsplash.com/photo-1527011045970-1a73cb95c968?w=400&q=80' },
-    { id: 3, name: 'ไมโครโฟน', desc: 'ไมโครโฟนไร้สาย', category: 'อุปกรณ์เสียง', available: 5, total: 6, img: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=400&q=80' },
-    { id: 4, name: 'โปรเจกเตอร์', desc: 'โปรเจกเตอร์พกพา 4K พร้อม HDMI', category: 'อุปกรณ์นำเสนอ', available: 2, total: 4, img: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&q=80' },
-    { id: 5, name: 'ลำโพงพกพา', desc: 'ลำโพงบลูทูธพกพา 100 วัตต์', category: 'อุปกรณ์เสียง', available: 6, total: 8, img: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&q=80' },
-    { id: 6, name: 'ไวท์บอร์ด', desc: 'ไวท์บอร์ดแม่เหล็กแบบพกพา', category: 'อุปกรณ์นำเสนอ', available: 3, total: 5, img: 'https://images.unsplash.com/photo-1531347625515-081498b35062?w=400&q=80' },
-    { id: 7, name: 'ชุดไฟสตูดิโอ', desc: 'ชุดไฟ LED พร้อมขาตั้ง', category: 'อุปกรณ์ถ่ายภาพ', available: 2, total: 3, img: 'https://images.unsplash.com/photo-1520390138845-fd2d229dd553?w=400&q=80' },
-    { id: 8, name: 'แล็ปท็อป', desc: 'MacBook Pro 14 นิ้ว ชิป M1', category: 'อุปกรณ์คอมพิวเตอร์', available: 4, total: 8, img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&q=80' },
-  ];*/
-
   // ================= ส่วนแสดงผลหน้าจอ แดชบอร์ด =================
   const renderDashboard = () => (
     <>

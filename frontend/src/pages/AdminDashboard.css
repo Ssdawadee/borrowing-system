@@ -1,0 +1,519 @@
+/* โครงสร้างหลัก */
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f9fa; /* สีพื้นหลังเทาอ่อนๆ */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* แถบเมนูด้านซ้าย */
+.sidebar {
+  width: 260px;
+  background-color: white;
+  border-right: 1px solid #eee;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-section {
+  margin-bottom: 30px;
+}
+
+.logo-section h2 {
+  color: #800000; /* สีแดงเข้มมหาลัย */
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.logo-section p {
+  color: #666;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.admin-profile {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background-color: #ffe0e0;
+  color: #800000;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.admin-profile h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-profile p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-item {
+  padding: 12px 15px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 8px;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #f0f0f0;
+}
+
+.menu-item.active {
+  background-color: #800000;
+  color: white;
+  font-weight: bold;
+}
+
+/* เนื้อหาหลักด้านขวา */
+.main-content {
+  flex: 1;
+  padding: 40px;
+  background-image: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://www.eng.src.ku.ac.th/wp-content/uploads/2022/08/banner_Robot_1024x480_edit-01-1024x480.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  overflow-y: auto;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #333;
+}
+
+header p {
+  color: #666;
+  margin-top: 5px;
+  margin-bottom: 30px;
+}
+
+/* การ์ดสถิติ */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: #333;
+}
+
+.card p {
+  margin: 10px 0 0 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.text-orange { color: #d97706 !important; }
+.text-green { color: #059669 !important; }
+
+/* ส่วนแสดงสถานะอุปกรณ์ */
+.availability-section {
+  background-color: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-bottom: 30px;
+}
+
+.availability-section h3 { margin-top: 0; }
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stock-item {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.progress-bar-used {
+  height: 100%;
+  background-color: #800000;
+  transition: width 0.5s ease-in-out;
+}
+
+/* รายการล่าสุด */
+.recent-requests-section {
+  background-color: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.request-item:last-child {
+  border-bottom: none;
+}
+
+.req-info h4 { margin: 0 0 5px 0; }
+.req-info p { margin: 0; color: #666; font-size: 0.9rem; }
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.status-badge.pending { background-color: #fef3c7; color: #d97706; }
+.status-badge.approved { background-color: #d1fae5; color: #059669; }
+.status-badge.borrowed { background-color: #dbeafe; color: #2563eb; }
+.status-badge.returned { background-color: #f3f4f6; color: #4b5563; }
+.status-badge.rejected { background-color: #fee2e2; color: #dc2626; }
+
+/* เพิ่มเติมสำหรับหน้าจัดการอุปกรณ์ */
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-primary {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.table-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-top: 20px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 2px solid #eee;
+  color: #666;
+}
+
+.admin-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.badge-gray {
+  background-color: #f0f0f0;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.85em;
+  color: #555;
+}
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.badge-green { background-color: #e6f4ea; color: #1e8e3e; }
+.badge-orange { background-color: #fce8e6; color: #d93025; }
+
+.desc-text {
+  font-size: 0.9em;
+  color: #555;
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+  margin-right: 10px;
+}
+/* ===============================
+   Modal (Pop-up) Styles
+=============================== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #8B1E0F; /* สีแดงของมหาลัย */
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  padding: 10px 15px;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #555;
+}
+
+.btn-save {
+  padding: 10px 15px;
+  border: none;
+  background: #8B1E0F;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* ===============================
+   Edit Modal Styles (สไตล์ใหม่สีเทา)
+=============================== */
+.edit-modal {
+  width: 550px;
+  position: relative;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #555;
+  font-weight: bold;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-group-gray {
+  margin-bottom: 15px;
+}
+
+.form-group-gray label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: normal;
+  color: #333;
+}
+
+/* ทำให้ช่องกรอกเป็นสีเทา ไม่มีขอบ */
+.form-group-gray input,
+.form-group-gray select {
+  width: 100%;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 8px;
+  background-color: #f0f0f0; 
+  box-sizing: border-box;
+  font-family: inherit;
+  color: #000;
+  outline: none;
+}
+
+.form-group-gray input:focus,
+.form-group-gray select:focus {
+  background-color: #e8e8e8;
+}
+
+.edit-actions {
+  margin-top: 30px;
+  justify-content: flex-end;
+}
+
+.btn-cancel-gray {
+  padding: 10px 20px;
+  border: none;
+  background: #999;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+}
+
+.btn-save-red {
+  padding: 10px 20px;
+  border: none;
+  background: #8B1E0F;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+}
+
+/* =========================================
+   กลุ่มปุ่มจัดการสถานะ (อนุมัติ / ปฏิเสธ / คืนของ)
+========================================= */
+.action-group {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-approve {
+  background-color: #10b981; /* สีเขียว Modern */
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s ease, transform 0.1s;
+}
+.btn-approve:hover { background-color: #059669; transform: scale(1.02); }
+
+.btn-reject {
+  background-color: #ef4444; /* สีแดง Modern */
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s ease, transform 0.1s;
+}
+.btn-reject:hover { background-color: #dc2626; transform: scale(1.02); }
+
+.btn-return {
+  background-color: #3b82f6; /* สีฟ้า Modern */
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  width: 100%;
+  transition: background 0.2s ease, transform 0.1s;
+}
+.btn-return:hover { background-color: #2563eb; transform: scale(1.02); }

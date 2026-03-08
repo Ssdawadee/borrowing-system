@@ -20,7 +20,7 @@ body, html {
   height: 100vh;
   /* ใส่ภาพพื้นหลัง (ผมใส่ภาพตึกจำลองไว้ คุณสามารถเปลี่ยนลิงก์ภาพทีหลังได้) */
   background: linear-gradient(135deg, rgba(123, 17, 19, 0.85) 0%, rgba(0,0,0,0.5) 100%), 
-              url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+              url('https://www.eng.src.ku.ac.th/wp-content/uploads/2022/08/banner_Robot_1024x480_edit-01-1024x480.jpg');
   background-size: cover;
   background-position: center;
 }
