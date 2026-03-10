@@ -26,31 +26,49 @@ function AdminDashboard() {
   // 💡 [เพิ่มใหม่] State สำหรับหน้าอนุมัติคำขอ
   const [borrowRequests, setBorrowRequests] = useState([]);
 
+  // 💡 [เพิ่มใหม่] State สำหรับหน้า Report
+  const [reportFilters, setReportFilters] = useState({
+    startDate: '',
+    endDate: '',
+    status: 'all',
+    equipmentId: '',
+    studentId: ''
+  });
+  const [reportRows, setReportRows] = useState([]);
+
   // URL หลักของ API
   const API_BASE_URL = 'https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev';
 
+  const authAxios = axios.create();
+  const token = localStorage.getItem('token');
+  if (token) {
+    authAxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+
   const fetchEquipments = () => {
-    axios.get(`${API_BASE_URL}/api/admin/equipments`)
+    authAxios.get(`${API_BASE_URL}/api/admin/equipments`)
       .then(res => setEquipments(res.data))
       .catch(err => console.error(err));
   };
 
   // 💡 [เพิ่มใหม่] ฟังก์ชันดึงข้อมูลคำขอยืมทั้งหมด
   const fetchBorrowRequests = () => {
-    axios.get(`${API_BASE_URL}/api/admin/requests`)
+    authAxios.get(`${API_BASE_URL}/api/admin/requests`)
       .then(res => setBorrowRequests(res.data))
       .catch(err => console.error(err));
   };
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
-      axios.get(`${API_BASE_URL}/api/admin/dashboard`)
+      authAxios.get(`${API_BASE_URL}/api/admin/dashboard`)
         .then(res => setStats(res.data))
         .catch(err => console.error(err));
     } else if (activeTab === 'equipment') {
       fetchEquipments();
     } else if (activeTab === 'approvals') {
       fetchBorrowRequests(); // 💡 โหลดข้อมูลเมื่อเปิดหน้า "อนุมัติคำขอ"
+    } else if (activeTab === 'reports') {
+      handleFetchReports();
     }
   }, [activeTab]);
 
@@ -60,7 +78,7 @@ function AdminDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/api/admin/equipments`, formData);
+      await authAxios.post(`${API_BASE_URL}/api/admin/equipments`, formData);
       Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: 'เพิ่มอุปกรณ์เรียบร้อยแล้ว', confirmButtonColor: '#8B1E0F', timer: 2000 });
       setIsModalOpen(false);
       setFormData({ name: '', category: '', description: '', image_url: '' });
@@ -78,7 +96,7 @@ function AdminDashboard() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API_BASE_URL}/api/admin/equipments/${editFormData.id}`, editFormData);
+      await authAxios.put(`${API_BASE_URL}/api/admin/equipments/${editFormData.id}`, editFormData);
       Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: 'ปรับปรุงข้อมูลอุปกรณ์เรียบร้อยแล้ว', confirmButtonColor: '#8B1E0F', timer: 2000 });
       setIsEditModalOpen(false); 
       fetchEquipments(); 
@@ -94,7 +112,7 @@ function AdminDashboard() {
     });
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_BASE_URL}/api/admin/equipments/${id}`);
+        await authAxios.delete(`${API_BASE_URL}/api/admin/equipments/${id}`);
         Swal.fire({ icon: 'success', title: 'ลบสำเร็จ!', text: 'อุปกรณ์ถูกลบออกจากระบบแล้ว', confirmButtonColor: '#8B1E0F', timer: 2000 });
         fetchEquipments();
       } catch (error) {
@@ -123,7 +141,7 @@ function AdminDashboard() {
 
     if (result.isConfirmed) {
       try {
-        await axios.put(`${API_BASE_URL}/api/admin/requests/${id}`, { status: newStatus });
+        await authAxios.put(`${API_BASE_URL}/api/admin/requests/${id}`, { status: newStatus });
         Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: `บันทึกการ${actionText}เรียบร้อยแล้ว`, confirmButtonColor: '#8B1E0F', timer: 2000 });
         fetchBorrowRequests(); // โหลดข้อมูลตารางใหม่
       } catch (error) {
@@ -160,6 +178,23 @@ function AdminDashboard() {
   const translateStatus = (status) => {
     const statusMap = { 'pending': 'รออนุมัติ', 'approved': 'อนุมัติแล้ว', 'borrowed': 'กำลังยืม', 'returned': 'คืนแล้ว', 'rejected': 'ไม่อนุมัติ' };
     return statusMap[status] || status || 'รออนุมัติ';
+  };
+
+  // ==================================================
+  // ฟังก์ชันดึงข้อมูลรายงานการยืม
+  // ==================================================
+  const handleFetchReports = () => {
+    const params = {};
+    if (reportFilters.startDate) params.startDate = reportFilters.startDate;
+    if (reportFilters.endDate) params.endDate = reportFilters.endDate;
+    if (reportFilters.status && reportFilters.status !== 'all') params.status = reportFilters.status;
+    if (reportFilters.equipmentId) params.equipmentId = reportFilters.equipmentId;
+    if (reportFilters.studentId) params.studentId = reportFilters.studentId;
+
+    authAxios
+      .get(`${API_BASE_URL}/api/admin/reports/borrows`, { params })
+      .then((res) => setReportRows(res.data))
+      .catch((err) => console.error('Fetch reports error', err));
   };
 
   // ==================================================
@@ -362,6 +397,157 @@ function AdminDashboard() {
         </div>
       );
     }
+    // 💡 หน้าแสดงรายงานการยืม
+    else if (activeTab === 'reports') {
+      return (
+        <div className="approval-management">
+          <header className="page-header">
+            <div>
+              <h1>รายงานการยืมอุปกรณ์</h1>
+              <p>กรองและดูประวัติการยืมอุปกรณ์ทั้งหมดในระบบ</p>
+            </div>
+          </header>
+
+          <div className="card table-card">
+            <div className="table-header">
+              <h3>ตัวกรองรายงาน</h3>
+              <p>เลือกช่วงวันที่ สถานะ และข้อมูลที่ต้องการ</p>
+            </div>
+
+            <div className="report-filters">
+              <div className="filter-row">
+                <div className="filter-group">
+                  <label>วันที่ยืม (เริ่มต้น)</label>
+                  <input
+                    type="date"
+                    value={reportFilters.startDate}
+                    onChange={(e) => setReportFilters({ ...reportFilters, startDate: e.target.value })}
+                  />
+                </div>
+                <div className="filter-group">
+                  <label>วันที่ยืม (สิ้นสุด)</label>
+                  <input
+                    type="date"
+                    value={reportFilters.endDate}
+                    onChange={(e) => setReportFilters({ ...reportFilters, endDate: e.target.value })}
+                  />
+                </div>
+                <div className="filter-group">
+                  <label>สถานะคำขอ</label>
+                  <select
+                    value={reportFilters.status}
+                    onChange={(e) => setReportFilters({ ...reportFilters, status: e.target.value })}
+                  >
+                    <option value="all">ทั้งหมด</option>
+                    <option value="pending">รออนุมัติ</option>
+                    <option value="approved">อนุมัติแล้ว</option>
+                    <option value="rejected">ไม่อนุมัติ</option>
+                    <option value="returned">คืนแล้ว</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="filter-row">
+                <div className="filter-group">
+                  <label>รหัสอุปกรณ์ (ID)</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น 1, 2, 3"
+                    value={reportFilters.equipmentId}
+                    onChange={(e) => setReportFilters({ ...reportFilters, equipmentId: e.target.value })}
+                  />
+                </div>
+                <div className="filter-group">
+                  <label>รหัสนักศึกษา</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น b1234567890"
+                    value={reportFilters.studentId}
+                    onChange={(e) => setReportFilters({ ...reportFilters, studentId: e.target.value })}
+                  />
+                </div>
+                <div className="filter-actions">
+                  <button className="btn-primary" onClick={handleFetchReports}>
+                    ดึงรายงาน
+                  </button>
+                  <button
+                    className="btn-cancel-gray"
+                    onClick={() => {
+                      setReportFilters({
+                        startDate: '',
+                        endDate: '',
+                        status: 'all',
+                        equipmentId: '',
+                        studentId: ''
+                      });
+                      setReportRows([]);
+                    }}
+                  >
+                    ล้างตัวกรอง
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="table-header" style={{ marginTop: '10px' }}>
+              <h3>ผลลัพธ์รายงาน</h3>
+              <p>{reportRows.length} รายการ</p>
+            </div>
+
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>ผู้ยืม</th>
+                  <th>อุปกรณ์</th>
+                  <th>วันที่ยืม - คืน</th>
+                  <th>สถานะ</th>
+                  <th>วันที่คืนจริง</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportRows && reportRows.length > 0 ? (
+                  reportRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <strong>{row.student_id}</strong>
+                        <br />
+                        <small style={{ color: '#666' }}>{row.full_name}</small>
+                      </td>
+                      <td>{row.equipment_name}</td>
+                      <td>
+                        <small>
+                          ยืม: {new Date(row.borrow_date).toLocaleDateString('th-TH')}
+                        </small>
+                        <br />
+                        <small>
+                          กำหนดคืน: {new Date(row.return_date).toLocaleDateString('th-TH')}
+                        </small>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${row.status || 'pending'}`}>
+                          {translateStatus(row.status)}
+                        </span>
+                      </td>
+                      <td>
+                        {row.actual_return_date
+                          ? new Date(row.actual_return_date).toLocaleDateString('th-TH')
+                          : '-'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>
+                      ยังไม่มีข้อมูลรายงานตามตัวกรองที่เลือก
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -374,6 +560,7 @@ function AdminDashboard() {
             <button className={`menu-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>หน้าหลัก (Dashboard)</button>
             <button className={`menu-item ${activeTab === 'equipment' ? 'active' : ''}`} onClick={() => setActiveTab('equipment')}>จัดการคลังอุปกรณ์</button>
             <button className={`menu-item ${activeTab === 'approvals' ? 'active' : ''}`} onClick={() => setActiveTab('approvals')}>อนุมัติคำขอ</button>
+            <button className={`menu-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>รายงานการยืม</button>
           </nav>
         </div>
 

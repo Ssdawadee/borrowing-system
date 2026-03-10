@@ -11,7 +11,13 @@ import axios from 'axios';
 function User() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState({ fullName: 'ผู้ใช้งาน', id: 'N/A' });
-  
+  const [dashboardStats, setDashboardStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    recent: []
+  });
   // สร้าง State สำหรับเก็บว่าตอนนี้เปิดหน้าไหนอยู่ (เริ่มต้นที่หน้าแดชบอร์ด)
   const [activeTab, setActiveTab] = useState('dashboard');
   // 💡 ย้าย State 2 ตัวนี้ขึ้นมาไว้บนสุด เพื่อให้เรียกใช้ได้ไม่มีปัญหา
@@ -22,12 +28,17 @@ function User() {
   const [selectedCategory, setSelectedCategory] = useState('ทุกหมวดหมู่'); // เก็บหมวดหมู่ที่เลือก
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUserData({
         fullName: parsedUser.fullName,
         id: parsedUser.studentId || parsedUser.id || 'N/A'
       });
+      // ถ้ามี token ให้ตั้งค่า default header ให้ axios
+      if (storedToken) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+      }
     } else {
       navigate('/');
     }
@@ -37,7 +48,7 @@ function User() {
   useEffect(() => {
     if ((activeTab === 'myRequests' || activeTab === 'returnEquipment') && userData.id !== 'N/A') {
       setIsLoading(true);
-      axios.get(`https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/my-requests/${userData.id}`)
+      axios.get(`http://localhost:5000/api/my-requests/${userData.id}`)
         .then((response) => {
           setMyRequests(response.data);
           setIsLoading(false);
@@ -53,7 +64,7 @@ function User() {
     if (activeTab === 'equipment') {
       setIsLoading(true);
       // เปลี่ยน URL ตรงนี้เป็น API ดึงรายการอุปกรณ์ของคุณ
-      axios.get('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/equipments') 
+      axios.get('http://localhost:5000/api/equipments') 
         .then((response) => {
           setDbEquipments(response.data);
           setIsLoading(false);
@@ -82,84 +93,100 @@ function User() {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     navigate('/');
   };
 
   // ================= ส่วนแสดงผลหน้าจอ แดชบอร์ด =================
-  const renderDashboard = () => (
-    <>
-      <div className="welcome-section">
-        <h1>ยินดีต้อนรับกลับมา {userData.fullName}!</h1>
-        <p>รหัสนักศึกษา: {userData.id}</p>
-      </div>
+  const renderDashboard = () => {
+    const total = myRequests.length;
+    const pending = myRequests.filter(r => r.status === 'pending' || !r.status).length;
+    const approved = myRequests.filter(r => r.status === 'approved').length;
+    const rejected = myRequests.filter(r => r.status === 'rejected').length;
 
-      <section className="stats-grid">
-        <div className="stat-card">
-          <FaCube className="stat-icon" />
-          <h3>อุปกรณ์ที่พร้อมให้ยืม</h3>
-          <h2>8</h2>
-          <p>พร้อมสำหรับการยืม</p>
-        </div>
-        <div className="stat-card">
-          <FaRegClock className="stat-icon" />
-          <h3>คำขอที่รอการอนุมัติ</h3>
-          <h2>2</h2>
-          <p>กำลังรอการอนุมัติ</p>
-        </div>
-        <div className="stat-card">
-          <FaRegCheckCircle className="stat-icon" />
-          <h3>คำขอที่ได้รับอนุมัติ</h3>
-          <h2>2</h2>
-          <p>กำลังยืมอยู่</p>
-        </div>
-      </section>
+    const recent = [...myRequests]
+      .sort((a, b) => new Date(b.borrow_date) - new Date(a.borrow_date))
+      .slice(0, 3);
 
-      <h3 className="section-title">Quick Menu</h3>
-      <section className="quick-menu-grid">
-        <div className="quick-card" onClick={() => setActiveTab('equipment')}>
-          <div className="q-icon q-blue"><FaBoxOpen /></div>
-          <h4>ดูรายการอุปกรณ์</h4>
-          <p>ดูอุปกรณ์ที่สามารถยืมได้</p>
+    return (
+      <>
+        <div className="welcome-section">
+          <h1>ยินดีต้อนรับกลับมา {userData.fullName}!</h1>
+          <p>รหัสนักศึกษา: {userData.id}</p>
         </div>
-        <div className="quick-card" onClick={() => setActiveTab('equipment')}>
-          <div className="q-icon q-green"><FaPlus /></div>
-          <h4>ยืมอุปกรณ์</h4>
-          <p>ส่งคำขอยืมใหม่</p>
-        </div>
-        <div className="quick-card" onClick={() => setActiveTab('myRequests')}>
-          <div className="q-icon q-purple"><FaClipboardList /></div>
-          <h4>คำขอยืมของฉัน</h4>
-          <p>ตรวจสอบสถานะการยืม</p>
-        </div>
-        <div className="quick-card" onClick={() => setActiveTab('returnEquipment')}>
-          <div className="q-icon" style={{ backgroundColor: '#ff7eb3', color: 'white' }}><FaUndoAlt /></div>
-          <h4>คืนอุปกรณ์</h4>
-          <p>คืนอุปกรณ์ที่ยืม</p>
-        </div>
-      </section>
 
-      <div className="recent-list">
-        <h3 className="section-title">คำขอยืมล่าสุด</h3>
-        <p style={{ fontSize: '12px', color: '#888', marginTop: '-10px', marginBottom: '15px' }}>รายการคำขอยืมอุปกรณ์ล่าสุดของคุณ</p>
-        
-        <div className="list-item">
-          <div className="list-info">
-            <h4>กล้องถ่ายภาพ</h4>
-            <p>2026-03-06 ถึง 2026-03-10</p>
+        <section className="stats-grid">
+          <div className="stat-card">
+            <FaCube className="stat-icon" />
+            <h3>คำขอยืมทั้งหมด</h3>
+            <h2>{total}</h2>
+            <p>จำนวนคำขอยืมที่คุณเคยส่งทั้งหมด</p>
           </div>
-          <span className="badge approved">อนุมัติแล้ว</span>
-        </div>
-
-        <div className="list-item">
-          <div className="list-info">
-            <h4>โปรเจกเตอร์</h4>
-            <p>2026-03-08 ถึง 2026-03-12</p>
+          <div className="stat-card">
+            <FaRegClock className="stat-icon" />
+            <h3>คำขอที่รอการอนุมัติ</h3>
+            <h2>{pending}</h2>
+            <p>คำขอที่อยู่ระหว่างรอการตรวจสอบ</p>
           </div>
-          <span className="badge pending">รอการอนุมัติ</span>
+          <div className="stat-card">
+            <FaRegCheckCircle className="stat-icon" />
+            <h3>คำขอที่ได้รับอนุมัติ</h3>
+            <h2>{approved}</h2>
+            <p>คำขอที่ได้รับการอนุมัติแล้ว</p>
+          </div>
+        </section>
+
+        <h3 className="section-title">Quick Menu</h3>
+        <section className="quick-menu-grid">
+          <div className="quick-card" onClick={() => setActiveTab('equipment')}>
+            <div className="q-icon q-blue"><FaBoxOpen /></div>
+            <h4>ดูรายการอุปกรณ์</h4>
+            <p>ดูอุปกรณ์ที่สามารถยืมได้</p>
+          </div>
+          <div className="quick-card" onClick={() => setActiveTab('equipment')}>
+            <div className="q-icon q-green"><FaPlus /></div>
+            <h4>ยืมอุปกรณ์</h4>
+            <p>ส่งคำขอยืมใหม่</p>
+          </div>
+          <div className="quick-card" onClick={() => setActiveTab('myRequests')}>
+            <div className="q-icon q-purple"><FaClipboardList /></div>
+            <h4>คำขอยืมของฉัน</h4>
+            <p>ตรวจสอบสถานะการยืม</p>
+          </div>
+          <div className="quick-card" onClick={() => setActiveTab('returnEquipment')}>
+            <div className="q-icon" style={{ backgroundColor: '#ff7eb3', color: 'white' }}><FaUndoAlt /></div>
+            <h4>คืนอุปกรณ์</h4>
+            <p>คืนอุปกรณ์ที่ยืม</p>
+          </div>
+        </section>
+
+        <div className="recent-list">
+          <h3 className="section-title">คำขอยืมล่าสุด</h3>
+          <p style={{ fontSize: '12px', color: '#888', marginTop: '-10px', marginBottom: '15px' }}>
+            รายการคำขอยืมอุปกรณ์ล่าสุดของคุณ
+          </p>
+
+          {recent.length > 0 ? (
+            recent.map((req) => (
+              <div className="list-item" key={req.id}>
+                <div className="list-info">
+                  <h4>{req.equipment_name}</h4>
+                  <p>
+                    {req.borrow_date} ถึง {req.return_date}
+                  </p>
+                </div>
+                <span className={`badge ${req.status === 'approved' ? 'approved' : req.status === 'rejected' ? 'rejected' : 'pending'}`}>
+                  {req.status === 'approved' ? 'อนุมัติแล้ว' : req.status === 'rejected' ? 'ไม่อนุมัติ' : 'รอการอนุมัติ'}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p style={{ fontSize: '13px', color: '#aaa' }}>ยังไม่มีประวัติการยืมล่าสุด</p>
+          )}
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   // ================= ส่วนแสดงผลหน้าจอ รายการอุปกรณ์ =================
   const renderEquipmentList = () => (
@@ -312,7 +339,7 @@ function User() {
         };
 
         try {
-          const response = await axios.post('https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/borrow', requestData);
+          const response = await axios.post('http://localhost:5000/api/borrow', requestData);
           return response.data;
         } catch (error) {
           Swal.showValidationMessage(`เกิดข้อผิดพลาด: ${error.response?.data?.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้'}`);
@@ -455,7 +482,7 @@ function User() {
         showLoaderOnConfirm: true,
         preConfirm: async () => {
           try {
-            await axios.put(`https://stunning-system-5gx6ww6vjxqw37gwj-5000.app.github.dev/api/return/${request.id}`);
+            await axios.put(`http://localhost:5000/api/return/${request.id}`);
             return true;
           } catch (error) {
             Swal.showValidationMessage('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');

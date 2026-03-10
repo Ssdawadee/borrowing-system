@@ -123,6 +123,128 @@ Database
 
 ---
 
+## 🔧 Backend Setup
+
+### 1. Database
+
+- สร้างฐานข้อมูลและตารางหลักด้วยสคริปต์:
+  - `backend/sql/schema.sql`
+- จากนั้นรันไฟล์ migration (ตามลำดับ) เพื่อเพิ่มคอลัมน์เสริม:
+  - `backend/sql/migrations/001_add_timestamps.sql`
+  - `backend/sql/migrations/002_add_is_active_to_users.sql`
+
+ตัวอย่างคำสั่ง (ใน MySQL CLI):
+
+```sql
+SOURCE backend/sql/schema.sql;
+SOURCE backend/sql/migrations/001_add_timestamps.sql;
+SOURCE backend/sql/migrations/002_add_is_active_to_users.sql;
+```
+
+### 2. Backend Server
+
+- ติดตั้ง dependency ในโฟลเดอร์ `backend`:
+
+```bash
+cd backend
+npm install
+```
+
+- ตั้งค่า environment (ถ้าต้องการเปลี่ยนค่ามาตรฐาน):
+  - `JWT_SECRET` – secret key สำหรับเซ็น JWT
+  - `JWT_EXPIRES_IN` – อายุ token (เช่น `8h`)
+
+- รันเซิร์ฟเวอร์:
+
+```bash
+node server.js
+```
+
+Backend จะรันบนพอร์ต `5000` ตามค่าในโค้ดปัจจุบัน
+
+---
+
+## 🔐 Auth Model (JWT)
+
+- ผู้ใช้ทุกประเภท (User / Admin) ต้องล็อกอินผ่าน endpoint:
+  - `POST /api/login` (User – ใช้ `studentId` และ `password`)
+  - `POST /api/admin/login` (Admin – ใช้ `username` = `student_id` และ `password`)
+- เมื่อเข้าสู่ระบบสำเร็จ ระบบจะคืนค่า:
+  - `user` – ข้อมูลผู้ใช้ (`id`, `studentId`, `fullName`, `role`)
+  - `token` – JWT ที่ฝั่ง Frontend จะเก็บใน `localStorage` key `token`
+- ทุก request อื่น (ยกเว้น register/login) ต้องแนบ header:
+
+```http
+Authorization: Bearer <token>
+```
+
+- Middleware ใน `backend/server.js`:
+  - `authenticate` – ตรวจสอบ JWT และแนบข้อมูล `req.user`
+  - `authorizeAdmin` – ตรวจสอบว่า `req.user.role === 'admin'`
+
+---
+
+## 🌐 Key API Endpoints (สรุป)
+
+### User
+
+- `POST /api/register`
+  - สมัครสมาชิกใหม่ (default role = `user`)
+- `POST /api/login`
+  - ล็อกอินผู้ใช้ทั่วไป คืนค่า `{ user, token }`
+- `GET /api/equipments`
+  - ดึงรายการอุปกรณ์ทั้งหมด
+- `POST /api/borrow` (ต้องแนบ JWT)
+  - ส่งคำขอยืมอุปกรณ์  
+  - ระบบจะเช็คไม่ให้อุปกรณ์เดียวกันถูกยืมซ้ำในสถานะ `approved` / `borrowed`
+- `GET /api/my-requests/:userId` (ต้องแนบ JWT)
+  - ดึงประวัติคำขอยืมของผู้ใช้แต่ละคน
+- `PUT /api/return/:id` (ต้องแนบ JWT)
+  - ผู้ใช้ยืนยันการคืนอุปกรณ์ของตัวเอง  
+  - อนุญาตเฉพาะเมื่อคำขออยู่ในสถานะ `approved` / `borrowed` และจะตั้ง `status = 'returned'` พร้อม `actual_return_date`
+
+### Admin – Equipment & Requests
+
+- `POST /api/admin/login`
+  - ล็อกอิน Admin คืนค่า `{ user, token }`
+- `GET /api/admin/dashboard`
+  - Dashboard สรุปจำนวนอุปกรณ์ / คำขอยืม / รายการล่าสุด
+- `GET /api/admin/equipments`
+- `POST /api/admin/equipments`
+- `PUT /api/admin/equipments/:id`
+- `DELETE /api/admin/equipments/:id`
+  - CRUD คลังอุปกรณ์
+- `GET /api/admin/requests`
+  - ดึงคำขอยืมทั้งหมด (เรียงให้ `pending` ขึ้นก่อน)
+- `PUT /api/admin/requests/:id`
+  - อัปเดตสถานะคำขอยืม  
+  - อนุญาต transition:
+    - `pending -> approved / rejected`
+    - `approved -> returned` (จะตั้ง `actual_return_date`)
+
+### Admin – Users
+
+- `GET /api/admin/users`
+  - ดึงรายการผู้ใช้ทั้งหมด พร้อมตัวกรอง:
+    - `role` – `user` หรือ `admin`
+    - `isActive` – `1` หรือ `0`
+- `PATCH /api/admin/users/:id`
+  - แก้ไข `role` และ/หรือ `is_active` ของผู้ใช้ (อ้างอิง `user_id`)
+- `GET /api/admin/users/:id/requests`
+  - ดูประวัติการยืมของผู้ใช้รายคน (อ้างอิง `user_id`)
+
+### Admin – Reports
+
+- `GET /api/admin/reports/borrows`
+  - Endpoint รายงานการยืมอุปกรณ์ พร้อมตัวกรอง:
+    - `startDate`, `endDate` – ช่วงวันที่ยืม
+    - `status` – สถานะคำขอ (`pending`, `approved`, `rejected`, `returned`, หรือ `all`)
+    - `equipmentId` – รหัสอุปกรณ์
+    - `studentId` – รหัสนักศึกษา
+  - ใช้สำหรับหน้า Report ของ Admin ใน Frontend
+
+---
+
 ## 🔐 Non-Functional Requirements
 
 ### Security
