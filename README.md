@@ -1,4 +1,4 @@
-<h1 align="center">📦 Borrowing Student Club Equipment System</h1>
+<h1 align="center">📦 ENG Borrowing</h1>
 
 <p align="center">
 Web Application สำหรับจัดการการยืม–คืนอุปกรณ์
