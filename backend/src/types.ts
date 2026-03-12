@@ -9,6 +9,7 @@ export interface AuthenticatedUser {
   student_id: string;
   name: string;
   email: string;
+  phone: string;
   role: UserRole;
   [key: string]: unknown;
 }

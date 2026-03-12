@@ -150,6 +150,30 @@ select:focus {
   background-color: rgba(230, 155, 83, 0.08);
 }
 
+.history-toolbar {
+  row-gap: 12px;
+}
+
+.history-pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.floating-alert--success {
+  animation: toast-auto-dismiss 1.5s ease forwards;
+}
+
+@keyframes toast-auto-dismiss {
+  0%, 88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

@@ -1,46 +1,47 @@
-# University Club Equipment Borrowing System
+# ระบบยืม-คืนอุปกรณ์ สโมสรวิศวกรรมศาสตร์
 
-Full-stack project for managing university club equipment borrowing with two roles: student user and admin. The project is set up to run locally with npm or with a single Docker Compose command for grading.
+โปรเจกต์ Full-stack สำหรับจัดการการยืมอุปกรณ์ของสโมสรวิศวกรรมศาสตร์ รองรับผู้ใช้งาน 2 บทบาท: นักศึกษา และผู้ดูแลระบบ (Admin) โดยโปรเจกต์นี้รันแบบ local ได้ด้วย npm
 
-## Stack
+## เทคโนโลยีที่ใช้
 
 - Frontend: React, Vite, TailwindCSS, Axios, React Router
 - Backend: Node.js, Express, TypeScript, JWT Authentication
 - Database: SQLite
-- DevOps: Docker, Docker Compose
 
-## Main folders
+## โฟลเดอร์หลัก
 
 ```text
 frontend
 backend
+docs
 database
 SRS
 ```
 
-## Features
+## ความสามารถของระบบ
 
-- Register and login with JWT
-- Student dashboard with due-soon reminders
-- Equipment listing with search and category filter
-- Borrow workflow: `PENDING -> APPROVED -> RETURN_PENDING -> RETURNED`
-- Admin dashboard with quick statistics
-- Admin equipment management
-- Admin approval and return confirmation
-- Equipment condition status: `NORMAL` or `DAMAGED`
+- สมัครสมาชิกและเข้าสู่ระบบด้วย JWT
+- หน้าสรุปของนักศึกษาพร้อมแจ้งเตือนใกล้ครบกำหนด
+- รายการอุปกรณ์พร้อมค้นหาและกรองตามหมวดหมู่
+- ลำดับสถานะการยืม: `PENDING -> APPROVED -> RETURN_PENDING -> RETURNED`
+- หน้าสรุปของผู้ดูแลพร้อมสถิติสำคัญ
+- จัดการผู้ใช้สำหรับผู้ดูแล (ดูรายชื่อ/ติดตามสถานะการยืม/ลบบัญชีตามเงื่อนไข)
+- จัดการอุปกรณ์สำหรับผู้ดูแล
+- จัดการหมวดหมู่สำหรับผู้ดูแล
+- ผู้ดูแลอนุมัติคำขอยืมและยืนยันการคืน
+- สถานะสภาพอุปกรณ์: `NORMAL` หรือ `DAMAGED`
 
-## Default accounts
+## บัญชีเริ่มต้น
 
 - Admin
   - Email: `admin@club.com`
   - Password: `admin123`
-- Student demo
-  - Email: `alice@student.edu`
-  - Password: `admin123`
+- บัญชีนักศึกษา
+  - สมัครใหม่ผ่านหน้า Register (ใช้รหัสนิสิตขึ้นต้น `b` + ตัวเลข 10 หลัก)
 
-## Method 1: Run with npm
+## วิธีรันด้วย npm
 
-Open 2 terminals from the project root.
+เปิด 2 terminal จากโฟลเดอร์หลักของโปรเจกต์
 
 Backend:
 
@@ -58,29 +59,16 @@ npm install
 npm run dev
 ```
 
-URLs:
+URL ที่ใช้:
 
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:5000/api`
 
-## Method 2: Run with Docker
+## การตั้งค่า Environment
 
-From the project root:
+สามารถคัดลอก `.env.example` เป็น `.env` เพื่อปรับค่าเองได้ แต่โปรเจกต์สามารถรันด้วยค่าเริ่มต้นในโค้ดได้เลย
 
-```powershell
-docker-compose up --build
-```
-
-URLs:
-
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:5000/api`
-
-## Environment
-
-You can copy `.env.example` to `.env` if you want to override defaults, but the project can run with the default values included in code and compose.
-
-Example values:
+ตัวอย่างค่า:
 
 ```env
 PORT=5000
@@ -92,26 +80,29 @@ REMINDER_DAYS=3
 VITE_API_URL=http://localhost:5000/api
 ```
 
-## Multi-device testing (important)
+## การทดสอบหลายเครื่อง (สำคัญ)
 
-If two people test on different computers, both frontends must call the same backend and database.
+ถ้าทดสอบจากหลายคอมพิวเตอร์ ต้องให้ frontend ทุกเครื่องเรียก backend และฐานข้อมูลชุดเดียวกัน
 
-Use one machine as server:
+ใช้หนึ่งเครื่องเป็น server:
 
-1. Start backend on server machine (`npm run dev` in `backend` or Docker).
-2. Start frontend on server machine, or host static frontend there.
-3. On client machines, set `VITE_API_URL` to server IP, for example:
+1. เปิด backend บนเครื่อง server (`npm run dev` ใน `backend`)
+2. เปิด frontend บนเครื่อง server หรือ host static frontend ที่เครื่องนั้น
+3. บนเครื่องลูก ให้ตั้งค่า `VITE_API_URL` เป็น IP ของเครื่อง server เช่น:
 
 ```env
 VITE_API_URL=http://192.168.1.10:5000/api
 ```
 
-If each machine runs its own backend at `localhost:5000`, data will be separate and borrow requests will not appear across machines.
+ถ้าแต่ละเครื่องรัน backend ของตัวเองที่ `localhost:5000` ข้อมูลจะถูกแยกกัน และคำขอยืมจะไม่เห็นข้ามเครื่อง
 
-## Important API routes
+## API สำคัญ
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `GET /api/categories`
+- `POST /api/categories`
+- `DELETE /api/categories/:id`
 - `GET /api/equipment`
 - `POST /api/equipment`
 - `PUT /api/equipment/:id`
@@ -119,12 +110,18 @@ If each machine runs its own backend at `localhost:5000`, data will be separate 
 - `POST /api/borrow/request`
 - `GET /api/borrow/user`
 - `GET /api/borrow/all`
+- `GET /api/borrows/history`
+- `GET /api/dashboard/user`
+- `GET /api/dashboard/admin`
 - `PUT /api/borrow/approve/:id`
+- `PUT /api/borrow/reject/:id`
 - `PUT /api/borrow/return/:id`
 - `PUT /api/borrow/confirm-return/:id`
+- `GET /api/admin/users`
+- `DELETE /api/admin/users/:id`
 
-## Notes
+## หมายเหตุ
 
-- SQLite database file is created automatically on first backend start.
-- Seed data is inserted automatically only when the database is empty.
-- The `SRS` folder is kept for the Software Requirements Specification document prepared by the user.
+- ระบบจะสร้างไฟล์ฐานข้อมูล SQLite อัตโนมัติเมื่อเปิด backend ครั้งแรก
+- ระบบจะ seed ข้อมูลเริ่มต้นอัตโนมัติเฉพาะตอนฐานข้อมูลยังว่าง
+- โฟลเดอร์ `SRS` ใช้เก็บเอกสาร Software Requirements Specification ของโปรเจกต์

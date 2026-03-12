@@ -7,6 +7,7 @@ export interface AppUser {
   student_id: string;
   name: string;
   email: string;
+  phone: string;
   role: UserRole;
 }
 
@@ -22,6 +23,7 @@ export interface EquipmentItem {
   description: string;
   total_quantity: number;
   available_quantity: number;
+  damaged_quantity: number;
   image_url: string;
   status: EquipmentStatus;
 }
@@ -83,6 +85,7 @@ export interface AdminDashboardResponse {
     availableUnits: number;
     pendingRequests: number;
     damagedItems: number;
+    totalUsers: number;
   };
   pendingRequests: Array<{
     id: number;
@@ -94,4 +97,30 @@ export interface AdminDashboardResponse {
     student_id?: string;
     equipment_name: string;
   }>;
+}
+
+export interface AdminUserSummary {
+  id: number;
+  student_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  created_at: string;
+  borrow_count: number;
+  latest_borrow_date?: string | null;
+  has_unreturned: number;
+  has_overdue: number;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationInfo;
 }

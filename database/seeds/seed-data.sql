@@ -1,6 +1,6 @@
-INSERT INTO users (student_id, name, email, password, role)
+INSERT INTO users (student_id, name, email, phone, password, role)
 VALUES
-('ADMIN001', 'Club Administrator', 'admin@club.com', '$2a$10$zfbpf8XXwqMI3e3WuQOgsu/eQs7MEq/JmoW8LaZWaMZ/ZbHK3ojM6', 'admin');
+('ADMIN001', 'Club Administrator', 'admin@club.com', '0000000000', '$2a$10$zfbpf8XXwqMI3e3WuQOgsu/eQs7MEq/JmoW8LaZWaMZ/ZbHK3ojM6', 'admin');
 
 INSERT INTO equipment (name, category, description, total_quantity, available_quantity, image_url, status)
 VALUES

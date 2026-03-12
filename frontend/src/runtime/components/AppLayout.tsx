@@ -25,15 +25,17 @@ const navByRole = {
     { label: 'แดชบอร์ด', to: '/admin/dashboard', icon: '🏠' },
     { label: 'อนุมัติคำขอ', to: '/admin/requests', icon: '✅' },
     { label: 'ยืนยันการคืน', to: '/admin/returns', icon: '📥' },
-    { label: 'ประวัติการยืม', to: '/admin/history', icon: '🧾' },
+    { label: 'ประวัติทั้งหมด', to: '/admin/history', icon: '🧾' },
     { label: 'จัดการหมวดหมู่', to: '/admin/categories', icon: '🗂️' },
     { label: 'จัดการอุปกรณ์', to: '/admin/equipment', icon: '🛠️' },
+    { label: 'จัดการผู้ใช้', to: '/admin/users', icon: '👥' },
   ],
 } as const;
 
 const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
   const location = useLocation();
   const navItems = navByRole[user.role];
+  const userIdentityLabel = user.role === 'user' ? user.student_id : user.email;
 
   return (
     <div className="min-h-screen bg-parchment">
@@ -46,7 +48,7 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
             <p className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 text-sm text-white/85">
               {user.name}
               <br />
-              {user.email}
+              {userIdentityLabel}
             </p>
             <nav className="mt-8 space-y-2">
               {navItems.map((item) => {

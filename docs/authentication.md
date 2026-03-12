@@ -1,54 +1,48 @@
-# Authentication Documentation for University Club Equipment Borrowing System
+# การยืนยันตัวตน (Authentication)
 
-## Overview
-The University Club Equipment Borrowing System implements a secure authentication mechanism to manage user access and ensure that only authorized users can perform specific actions within the application. This document outlines the authentication process, including user registration, login, and token management.
+เอกสารนี้อธิบายกลไกการเข้าสู่ระบบและการควบคุมสิทธิ์ของระบบยืม-คืนอุปกรณ์
 
-## User Roles
-The system supports the following user roles:
-- **Admin**: Has full access to manage users, equipment, and borrow requests.
-- **Member**: Can borrow equipment and manage their own requests.
-- **Guest**: Can view equipment but cannot borrow or manage requests.
+## บทบาทผู้ใช้ที่มีจริงในระบบ
 
-## Authentication Flow
+- `admin` ผู้ดูแลระบบ
+- `user` นักศึกษา
 
-### 1. User Registration
-- **Endpoint**: `POST /api/auth/register`
-- **Request Body**:
-  - `username`: String, required
-  - `email`: String, required
-  - `password`: String, required
-  - `role`: String, optional (default is "Member")
+## เส้นทางที่เกี่ยวข้อง
 
-- **Response**:
-  - `201 Created`: User successfully registered.
-  - `400 Bad Request`: Validation errors or user already exists.
+- `POST /api/auth/register`
+- `POST /api/auth/login`
 
-### 2. User Login
-- **Endpoint**: `POST /api/auth/login`
-- **Request Body**:
-  - `email`: String, required
-  - `password`: String, required
+## รูปแบบการสมัครสมาชิก
 
-- **Response**:
-  - `200 OK`: Returns a JWT token and user information.
-  - `401 Unauthorized`: Invalid credentials.
+ใช้สำหรับนักศึกษาเป็นหลัก โดยข้อมูลสำคัญที่ระบบตรวจคือ
 
-### 3. Token Management
-- Upon successful login, a JWT (JSON Web Token) is issued to the user. This token must be included in the `Authorization` header for all subsequent requests that require authentication.
-- **Example Header**:
-  ```
-  Authorization: Bearer <token>
-  ```
+- `student_id` ต้องขึ้นต้นด้วย `b` และตามด้วยเลข 10 หลัก
+- `phone` ต้องเป็นตัวเลข 10 หลัก
+- `name` และ `password` ต้องไม่ว่าง
 
-### 4. Middleware for Authentication
-- The application uses middleware to protect routes that require authentication. The `authMiddleware.ts` checks for the presence of a valid JWT in the request headers.
-- If the token is valid, the user information is extracted and attached to the request object for further processing.
+เมื่อสมัครสำเร็จ ระบบจะสร้างบัญชีบทบาท `user`
 
-### 5. Role-Based Access Control
-- The `roleMiddleware.ts` is used to enforce role-based access control. It checks the user's role against the required permissions for specific routes.
-- Example of protected route:
-  - **Endpoint**: `GET /api/admin/users`
-  - **Required Role**: Admin
+## รูปแบบการเข้าสู่ระบบ
 
-## Conclusion
-This authentication system ensures that users can securely register, log in, and access resources based on their roles. Proper implementation of JWT and middleware enhances the security of the University Club Equipment Borrowing System.
+รองรับการส่ง `identifier` เพื่อ login ได้ทั้งอีเมลหรือรหัสนักศึกษา ร่วมกับ
+
+- `password`
+- `role` (ใช้ตรวจว่าบัญชีตรงกับหน้าที่เลือก login)
+
+เมื่อข้อมูลถูกต้อง ระบบจะออก JWT token และข้อมูลผู้ใช้กลับไปให้ frontend
+
+## การส่ง Token
+
+ทุก API ที่ต้องยืนยันตัวตนจะใช้ header:
+
+`Authorization: Bearer <token>`
+
+## การป้องกันเส้นทาง (Middleware)
+
+- `authMiddleware` ตรวจว่า token มีและถูกต้อง ก่อนเข้าถึง route ที่ป้องกัน
+- `roleMiddleware` ใช้กับ route ที่จำกัดสิทธิ์ เช่น route ฝั่ง admin
+
+## เงื่อนไขสำคัญเพิ่มเติม
+
+- ถ้าบัญชีถูกปิดใช้งาน (`is_active = 0`) ระบบจะไม่อนุญาตให้ login
+- route ที่ไม่เกี่ยวกับผู้ดูแลจะไม่สามารถเรียก route admin ได้ เพราะมีการเช็ค role

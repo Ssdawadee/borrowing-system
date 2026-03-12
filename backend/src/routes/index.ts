@@ -19,10 +19,12 @@ const normalizeUser = (user: AuthenticatedUser) => ({
 	student_id: user.student_id,
 	name: user.name,
 	email: user.email,
+	phone: user.phone,
 	role: user.role,
 });
 
 const isValidStudentId = (value: string) => /^b\d{10}$/i.test(value);
+const isValidPhone = (value: string) => /^\d{10}$/.test(value);
 
 router.get('/categories', async (_req, res, next) => {
 	try {
@@ -92,7 +94,7 @@ router.delete('/categories/:id', authMiddleware, roleMiddleware(['admin']), asyn
 		);
 
 		if ((usage?.count || 0) > 0) {
-			return res.status(400).json({ message: 'Cannot delete category that is in use by equipment.' });
+			return res.status(400).json({ message: 'ไม่สามารถลบหมวดหมู่นี้ได้ เพราะยังมีอุปกรณ์ใช้งานอยู่ในหมวดหมู่นี้' });
 		}
 
 		await db.run('DELETE FROM categories WHERE id = ?', categoryId);
@@ -108,21 +110,27 @@ router.get('/health', (_req, res) => {
 
 router.post('/auth/register', async (req, res, next) => {
 	try {
-		const { student_id, name, email, password } = req.body as {
+		const { student_id, name, email, phone, password } = req.body as {
 			student_id?: string;
 			name?: string;
 			email?: string;
+			phone?: string;
 			password?: string;
 		};
 
-		if (!student_id || !name || !password) {
-			return res.status(400).json({ message: 'Student ID, name, and password are required.' });
+		if (!student_id || !name || !phone || !password) {
+			return res.status(400).json({ message: 'Student ID, name, phone, and password are required.' });
 		}
 
 		const normalizedStudentId = student_id.trim().toLowerCase();
+		const normalizedPhone = phone.trim();
 
 		if (!isValidStudentId(normalizedStudentId)) {
 			return res.status(400).json({ message: 'รหัสนักศึกษาต้องขึ้นต้นด้วย b และตามด้วยตัวเลข 10 หลัก' });
+		}
+
+		if (!isValidPhone(normalizedPhone)) {
+			return res.status(400).json({ message: 'เบอร์โทรต้องเป็นตัวเลข 10 หลัก' });
 		}
 
 		const normalizedEmail = email?.trim().toLowerCase() || `${normalizedStudentId}@student.local`;
@@ -140,16 +148,17 @@ router.post('/auth/register', async (req, res, next) => {
 
 		const hashedPassword = await bcrypt.hash(password, 10);
 		const result = await db.run(
-			`INSERT INTO users (student_id, name, email, password, role)
-			 VALUES (?, ?, ?, ?, 'user')`,
+			`INSERT INTO users (student_id, name, email, phone, password, role)
+			 VALUES (?, ?, ?, ?, ?, 'user')`,
 			normalizedStudentId,
 			name.trim(),
 			normalizedEmail,
+			normalizedPhone,
 			hashedPassword
 		);
 
 		const user = await db.get<AuthenticatedUser>(
-			'SELECT id, student_id, name, email, role FROM users WHERE id = ?',
+			'SELECT id, student_id, name, email, phone, role FROM users WHERE id = ?',
 			result.lastID
 		);
 
@@ -184,8 +193,8 @@ router.post('/auth/login', async (req, res, next) => {
 		}
 
 		const db = getDatabase();
-		const user = await db.get<(AuthenticatedUser & { password: string })>(
-			'SELECT id, student_id, name, email, password, role FROM users WHERE email = ? OR student_id = ?',
+		const user = await db.get<(AuthenticatedUser & { password: string; is_active: number })>(
+			'SELECT id, student_id, name, email, phone, password, role, is_active FROM users WHERE email = ? OR student_id = ?',
 			identifier,
 			identifier
 		);
@@ -198,6 +207,10 @@ router.post('/auth/login', async (req, res, next) => {
 
 		if (!passwordMatches) {
 			return res.status(401).json({ message: 'รหัสนักศึกษา อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
+		}
+
+		if (!user.is_active) {
+			return res.status(403).json({ message: 'บัญชีนี้ถูกปิดการใช้งาน กรุณาติดต่อผู้ดูแลระบบ' });
 		}
 
 		if (role && user.role !== role) {
@@ -243,12 +256,13 @@ router.get('/equipment', async (req, res, next) => {
 
 router.post('/equipment', authMiddleware, roleMiddleware(['admin']), async (req, res, next) => {
 	try {
-		const { name, category, description, total_quantity, available_quantity, image_url, status } = req.body as {
+		const { name, category, description, total_quantity, available_quantity, damaged_quantity, image_url, status } = req.body as {
 			name?: string;
 			category?: string;
 			description?: string;
 			total_quantity?: number;
 			available_quantity?: number;
+			damaged_quantity?: number;
 			image_url?: string;
 			status?: EquipmentCondition;
 		};
@@ -262,22 +276,31 @@ router.post('/equipment', authMiddleware, roleMiddleware(['admin']), async (req,
 		}
 
 		const db = getDatabase();
-		const availableQuantity =
-			typeof available_quantity === 'number' ? available_quantity : total_quantity;
+		const damagedQuantity =
+			typeof damaged_quantity === 'number' ? damaged_quantity : 0;
 
-		if (availableQuantity < 0 || availableQuantity > total_quantity) {
-			return res.status(400).json({ message: 'Available quantity must be between 0 and total quantity.' });
+		if (damagedQuantity < 0 || damagedQuantity > total_quantity) {
+			return res.status(400).json({ message: 'Damaged quantity must be between 0 and total quantity.' });
+		}
+
+		const maxAvailableQuantity = total_quantity - damagedQuantity;
+		const availableQuantity =
+			typeof available_quantity === 'number' ? available_quantity : maxAvailableQuantity;
+
+		if (availableQuantity < 0 || availableQuantity > maxAvailableQuantity) {
+			return res.status(400).json({ message: 'Available quantity must be between 0 and (total quantity - damaged quantity).' });
 		}
 
 		const result = await db.run(
 			`INSERT INTO equipment
-			 (name, category, description, total_quantity, available_quantity, image_url, status)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			 (name, category, description, total_quantity, available_quantity, damaged_quantity, image_url, status)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			name.trim(),
 			category.trim(),
 			description?.trim() || '',
 			total_quantity,
 			availableQuantity,
+			damagedQuantity,
 			image_url?.trim() || '',
 			status || 'NORMAL'
 		);
@@ -306,6 +329,7 @@ router.put('/equipment/:id', authMiddleware, roleMiddleware(['admin']), async (r
 			description: req.body.description ?? existing.description,
 			total_quantity: Number(req.body.total_quantity ?? existing.total_quantity),
 			available_quantity: Number(req.body.available_quantity ?? existing.available_quantity),
+			damaged_quantity: Number(req.body.damaged_quantity ?? existing.damaged_quantity ?? 0),
 			image_url: req.body.image_url ?? existing.image_url,
 			status: (req.body.status ?? existing.status) as EquipmentCondition,
 		};
@@ -314,19 +338,27 @@ router.put('/equipment/:id', authMiddleware, roleMiddleware(['admin']), async (r
 			return res.status(400).json({ message: 'Total quantity must be greater than or equal to 0.' });
 		}
 
-		if (payload.available_quantity < 0 || payload.available_quantity > payload.total_quantity) {
-			return res.status(400).json({ message: 'Available quantity must be between 0 and total quantity.' });
+		if (payload.damaged_quantity < 0 || payload.damaged_quantity > payload.total_quantity) {
+			return res.status(400).json({ message: 'Damaged quantity must be between 0 and total quantity.' });
+		}
+
+		if (
+			payload.available_quantity < 0 ||
+			payload.available_quantity > (payload.total_quantity - payload.damaged_quantity)
+		) {
+			return res.status(400).json({ message: 'Available quantity must be between 0 and (total quantity - damaged quantity).' });
 		}
 
 		await db.run(
 			`UPDATE equipment
-			 SET name = ?, category = ?, description = ?, total_quantity = ?, available_quantity = ?, image_url = ?, status = ?
+			 SET name = ?, category = ?, description = ?, total_quantity = ?, available_quantity = ?, damaged_quantity = ?, image_url = ?, status = ?
 			 WHERE id = ?`,
 			payload.name,
 			payload.category,
 			payload.description,
 			payload.total_quantity,
 			payload.available_quantity,
+			payload.damaged_quantity,
 			payload.image_url,
 			payload.status,
 			req.params.id
@@ -409,17 +441,13 @@ router.post('/borrow/request', authMiddleware, async (req, res, next) => {
 		}
 
 		const db = getDatabase();
-		const equipment = await db.get<{ available_quantity: number; total_quantity: number; status: string }>(
-			'SELECT available_quantity, total_quantity, status FROM equipment WHERE id = ?',
+		const equipment = await db.get<{ available_quantity: number; total_quantity: number }>(
+			'SELECT available_quantity, total_quantity FROM equipment WHERE id = ?',
 			equipmentId
 		);
 
 		if (!equipment) {
 			return res.status(404).json({ message: 'Equipment not found.' });
-		}
-
-		if (equipment.status !== 'NORMAL') {
-			return res.status(400).json({ message: 'อุปกรณ์นี้ไม่พร้อมให้ยืมในขณะนี้' });
 		}
 
 		if (requestQuantity > equipment.total_quantity) {
@@ -528,6 +556,67 @@ router.get('/borrow/all', authMiddleware, roleMiddleware(['admin']), async (_req
 		);
 
 		return res.json(records);
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.get('/borrows/history', authMiddleware, roleMiddleware(['admin']), async (req, res, next) => {
+	try {
+		const db = getDatabase();
+		const rawPage = Number(req.query.page);
+		const rawLimit = Number(req.query.limit);
+
+		const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+		const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 10;
+		const safeLimit = Math.min(limit, 100);
+		const offset = (page - 1) * safeLimit;
+
+		const totalRow = await db.get<{ total: number }>(
+			`SELECT COUNT(*) as total
+			 FROM borrows
+			 WHERE status IN ('RETURNED', 'REJECTED')`
+		);
+
+		const total = Number(totalRow?.total || 0);
+		const totalPages = total > 0 ? Math.ceil(total / safeLimit) : 0;
+
+		const records = await db.all(
+			`SELECT b.*, u.name as user_name, u.student_id, u.email, e.name as equipment_name, e.category,
+					e.available_quantity as equipment_available_quantity, e.total_quantity as equipment_total_quantity,
+					CASE
+						WHEN b.status = 'APPROVED' THEN b.approved_at
+						WHEN b.status = 'REJECTED' THEN b.rejected_at
+						WHEN b.status = 'RETURNED' THEN b.return_confirmed_at
+						ELSE NULL
+					END as admin_action_at
+			 FROM borrows b
+			 JOIN users u ON u.id = b.user_id
+			 JOIN equipment e ON e.id = b.equipment_id
+			 WHERE b.status IN ('RETURNED', 'REJECTED')
+			 ORDER BY datetime(COALESCE(
+				CASE
+					WHEN b.status = 'APPROVED' THEN b.approved_at
+					WHEN b.status = 'REJECTED' THEN b.rejected_at
+					WHEN b.status = 'RETURNED' THEN b.return_confirmed_at
+					ELSE NULL
+				END,
+				b.borrow_date
+			)) DESC, b.id DESC
+			 LIMIT ? OFFSET ?`,
+			safeLimit,
+			offset
+		);
+
+		return res.json({
+			data: records,
+			pagination: {
+				page,
+				limit: safeLimit,
+				total,
+				totalPages,
+			},
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -793,12 +882,14 @@ router.get('/dashboard/admin', authMiddleware, roleMiddleware(['admin']), async 
 			availableUnits: number;
 			pendingRequests: number;
 			damagedItems: number;
+			totalUsers: number;
 		}>(
 			`SELECT
 				 COUNT(*) as totalEquipment,
 				 SUM(available_quantity) as availableUnits,
-				 SUM(CASE WHEN status = 'DAMAGED' THEN 1 ELSE 0 END) as damagedItems,
-				 (SELECT COUNT(*) FROM borrows WHERE status = 'PENDING') as pendingRequests
+				 SUM(CASE WHEN damaged_quantity > 0 THEN 1 ELSE 0 END) as damagedItems,
+				 (SELECT COUNT(*) FROM borrows WHERE status = 'PENDING') as pendingRequests,
+				 (SELECT COUNT(*) FROM users WHERE role = 'user') as totalUsers
 			 FROM equipment`
 		);
 
@@ -818,6 +909,7 @@ router.get('/dashboard/admin', authMiddleware, roleMiddleware(['admin']), async 
 				availableUnits: stats?.availableUnits || 0,
 				pendingRequests: stats?.pendingRequests || 0,
 				damagedItems: stats?.damagedItems || 0,
+				totalUsers: stats?.totalUsers || 0,
 			},
 			pendingRequests,
 		});
@@ -830,10 +922,62 @@ router.get('/admin/users', authMiddleware, roleMiddleware(['admin']), async (_re
 	try {
 		const db = getDatabase();
 		const users = await db.all(
-			'SELECT id, student_id, name, email, role, created_at FROM users ORDER BY created_at DESC'
+			`SELECT
+				u.id,
+				u.student_id,
+				u.name,
+				u.email,
+				u.phone,
+				u.role,
+				u.created_at,
+				COUNT(b.id) as borrow_count,
+				MAX(b.borrow_date) as latest_borrow_date,
+				MAX(CASE WHEN b.status IN ('APPROVED', 'RETURN_PENDING') THEN 1 ELSE 0 END) as has_unreturned,
+				MAX(CASE WHEN b.status IN ('APPROVED', 'RETURN_PENDING') AND datetime(b.due_date) < datetime('now') THEN 1 ELSE 0 END) as has_overdue
+			 FROM users u
+			 LEFT JOIN borrows b ON b.user_id = u.id
+			 WHERE u.role = 'user'
+			 GROUP BY u.id, u.student_id, u.name, u.email, u.phone, u.role, u.created_at
+			 ORDER BY datetime(u.created_at) DESC, u.id DESC`
 		);
 
 		return res.json(users);
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.delete('/admin/users/:id', authMiddleware, roleMiddleware(['admin']), async (req, res, next) => {
+	try {
+		const db = getDatabase();
+		const user = await db.get<{ id: number; role: UserRole; name: string }>(
+			'SELECT id, role, name FROM users WHERE id = ?',
+			req.params.id
+		);
+
+		if (!user) {
+			return res.status(404).json({ message: 'User not found.' });
+		}
+
+		if (user.role !== 'user') {
+			return res.status(400).json({ message: 'Only student accounts can be deleted from this screen.' });
+		}
+
+		const activeBorrow = await db.get<{ count: number }>(
+			`SELECT COUNT(*) as count
+			 FROM borrows
+			 WHERE user_id = ?
+			   AND status IN ('PENDING', 'APPROVED', 'RETURN_PENDING')`,
+			req.params.id
+		);
+
+		if ((activeBorrow?.count || 0) > 0) {
+			return res.status(400).json({ message: 'ไม่สามารถลบผู้ใช้ที่มีรายการยืมหรือคืนค้างอยู่ได้' });
+		}
+
+		await db.run('DELETE FROM users WHERE id = ?', req.params.id);
+
+		return res.json({ message: 'ลบผู้ใช้เรียบร้อยแล้ว' });
 	} catch (error) {
 		next(error);
 	}

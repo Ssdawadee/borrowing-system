@@ -1,44 +1,47 @@
-# User Roles for University Club Equipment Borrowing System
+# บทบาทผู้ใช้ในระบบ (User Roles)
 
-The University Club Equipment Borrowing System has several user roles, each with specific permissions and responsibilities. Below is a detailed description of each role:
+ระบบนี้มีบทบาทผู้ใช้ที่ใช้งานจริง 2 บทบาท
 
-## 1. Admin
-- **Permissions:**
-  - Manage user accounts (create, update, delete users).
-  - Manage equipment inventory (add, update, remove equipment).
-  - View all borrow requests and their statuses.
-  - Access audit logs for tracking system usage and changes.
-- **Responsibilities:**
-  - Ensure the system is functioning correctly and efficiently.
-  - Oversee the borrowing process and resolve any issues that arise.
-  - Maintain the integrity of the equipment inventory.
+## 1) Admin (ผู้ดูแลระบบ)
 
-## 2. Club Member
-- **Permissions:**
-  - View available equipment for borrowing.
-  - Submit borrow requests for equipment.
-  - View and manage their own borrow requests.
-- **Responsibilities:**
-  - Follow the borrowing guidelines set by the club.
-  - Return equipment on time and in good condition.
-  - Report any issues with borrowed equipment.
+**สิทธิ์หลัก**
 
-## 3. Equipment Manager
-- **Permissions:**
-  - Manage equipment details (add, update, remove equipment).
-  - View all borrow requests related to equipment they manage.
-  - Approve or deny borrow requests based on availability.
-- **Responsibilities:**
-  - Ensure that all equipment is in good condition and ready for borrowing.
-  - Communicate with club members regarding equipment availability and issues.
+- ดู dashboard ฝั่งผู้ดูแล
+- อนุมัติ/ปฏิเสธคำขอยืม
+- ยืนยันการคืนอุปกรณ์
+- ดูประวัติการยืมทั้งหมด
+- จัดการหมวดหมู่
+- จัดการอุปกรณ์ (เพิ่ม/แก้ไข/ลบ)
+- จัดการผู้ใช้ (ดูรายชื่อและลบผู้ใช้ตามเงื่อนไขระบบ)
 
-## 4. Guest
-- **Permissions:**
-  - View available equipment (limited access).
-  - Cannot submit borrow requests or manage equipment.
-- **Responsibilities:**
-  - Explore the system to understand available resources.
-  - Register as a club member to gain full access to borrowing features.
+**เมนูที่เห็นในระบบ**
 
-## Conclusion
-Each role is designed to facilitate the smooth operation of the University Club Equipment Borrowing System, ensuring that all users can effectively interact with the system according to their permissions and responsibilities.
+- แดชบอร์ด
+- อนุมัติคำขอ
+- ยืนยันการคืน
+- ประวัติทั้งหมด
+- จัดการหมวดหมู่
+- จัดการอุปกรณ์
+- จัดการผู้ใช้
+
+## 2) User (นักศึกษา)
+
+**สิทธิ์หลัก**
+
+- ดูรายการอุปกรณ์
+- ส่งคำขอยืมอุปกรณ์
+- ดูประวัติการยืมของตนเอง
+- ส่งคำขอคืนอุปกรณ์
+- ดู dashboard ฝั่งนักศึกษา
+
+**เมนูที่เห็นในระบบ**
+
+- แดชบอร์ด
+- รายการอุปกรณ์
+- ประวัติการยืม
+- คืนอุปกรณ์
+
+## หมายเหตุ
+
+- route ที่เป็นงานผู้ดูแลจะถูกป้องกันด้วย role `admin`
+- ผู้ใช้ role `user` ไม่สามารถเข้าหน้า/เรียก API ฝั่งผู้ดูแลได้

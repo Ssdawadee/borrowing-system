@@ -23,16 +23,13 @@ export const initializeDatabase = async () => {
 
   await database.exec('PRAGMA foreign_keys = ON;');
   await database.exec(fs.readFileSync(schemaPath, 'utf8'));
+  await ensureUserColumns(database);
   await ensureBorrowColumns(database);
   await ensureBorrowRejectedStatus(database);
+  await ensureEquipmentColumns(database);
   await ensureEquipmentQuantityIntegrity(database);
   await ensureCategoryTable(database);
   await seedDatabase(database);
-  await database.run(
-    `UPDATE users
-     SET student_id = '6501000001'
-     WHERE email = 'alice@student.edu' AND student_id = '65010001'`
-  );
 
   return database;
 };
@@ -59,6 +56,19 @@ const ensureBorrowColumns = async (db: Database<sqlite3.Database, sqlite3.Statem
 
   if (!columnNames.has('return_confirmed_at')) {
     await db.exec('ALTER TABLE borrows ADD COLUMN return_confirmed_at TEXT');
+  }
+};
+
+const ensureUserColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+  const columns = await db.all<Array<{ name: string }>>('PRAGMA table_info(users)');
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  if (!columnNames.has('phone')) {
+    await db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+  }
+
+  if (!columnNames.has('is_active')) {
+    await db.exec("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
   }
 };
 
@@ -136,13 +146,31 @@ const ensureCategoryTable = async (db: Database<sqlite3.Database, sqlite3.Statem
   }
 };
 
+const ensureEquipmentColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+  const columns = await db.all<Array<{ name: string }>>('PRAGMA table_info(equipment)');
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  if (!columnNames.has('damaged_quantity')) {
+    await db.exec('ALTER TABLE equipment ADD COLUMN damaged_quantity INTEGER NOT NULL DEFAULT 0');
+  }
+};
+
 const ensureEquipmentQuantityIntegrity = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+  await db.exec(`
+    UPDATE equipment
+    SET damaged_quantity = CASE
+      WHEN damaged_quantity < 0 THEN 0
+      WHEN damaged_quantity > total_quantity THEN total_quantity
+      ELSE damaged_quantity
+    END
+  `);
+
   // Repair legacy data where available quantity is outside valid range.
   await db.exec(`
     UPDATE equipment
     SET available_quantity = CASE
       WHEN available_quantity < 0 THEN 0
-      WHEN available_quantity > total_quantity THEN total_quantity
+      WHEN available_quantity > (total_quantity - damaged_quantity) THEN (total_quantity - damaged_quantity)
       ELSE available_quantity
     END
   `);

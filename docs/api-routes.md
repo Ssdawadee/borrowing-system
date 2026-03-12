@@ -1,121 +1,52 @@
-# API Routes for University Club Equipment Borrowing System
+# API Routes
 
-## Authentication Routes
-- **POST** `/api/auth/login`
-  - Description: Authenticates a user and returns a JWT token.
-  - Request Body: 
-    - `email`: string
-    - `password`: string
-  - Response: 
-    - `token`: string
+เอกสารนี้สรุปเส้นทาง API ที่ใช้งานจริงในโปรเจกต์ (base path: `/api`)
 
-- **POST** `/api/auth/register`
-  - Description: Registers a new user.
-  - Request Body: 
-    - `name`: string
-    - `email`: string
-    - `password`: string
-  - Response: 
-    - `message`: string
+## Health
 
-## User Management Routes
-- **GET** `/api/users`
-  - Description: Retrieves a list of all users (Admin only).
-  - Response: 
-    - `users`: array of user objects
+- `GET /health`
 
-- **GET** `/api/users/:id`
-  - Description: Retrieves a specific user by ID (Admin only).
-  - Response: 
-    - `user`: user object
+## Authentication
 
-- **PUT** `/api/users/:id`
-  - Description: Updates user information (Admin only).
-  - Request Body: 
-    - `name`: string (optional)
-    - `email`: string (optional)
-    - `role`: string (optional)
-  - Response: 
-    - `message`: string
+- `POST /auth/register`
+- `POST /auth/login`
 
-- **DELETE** `/api/users/:id`
-  - Description: Deletes a user (Admin only).
-  - Response: 
-    - `message`: string
+## Categories
 
-## Equipment Management Routes
-- **GET** `/api/equipment`
-  - Description: Retrieves a list of all equipment.
-  - Response: 
-    - `equipment`: array of equipment objects
+- `GET /categories`
+- `POST /categories` (admin)
+- `DELETE /categories/:id` (admin)
 
-- **GET** `/api/equipment/:id`
-  - Description: Retrieves details of a specific equipment item.
-  - Response: 
-    - `equipment`: equipment object
+## Equipment
 
-- **POST** `/api/equipment`
-  - Description: Adds a new equipment item (Admin only).
-  - Request Body: 
-    - `name`: string
-    - `description`: string
-    - `quantity`: number
-  - Response: 
-    - `message`: string
+- `GET /equipment`
+- `POST /equipment` (admin)
+- `PUT /equipment/:id` (admin)
+- `DELETE /equipment/:id` (admin)
 
-- **PUT** `/api/equipment/:id`
-  - Description: Updates an existing equipment item (Admin only).
-  - Request Body: 
-    - `name`: string (optional)
-    - `description`: string (optional)
-    - `quantity`: number (optional)
-  - Response: 
-    - `message`: string
+## Borrow Flow
 
-- **DELETE** `/api/equipment/:id`
-  - Description: Deletes an equipment item (Admin only).
-  - Response: 
-    - `message`: string
+- `POST /borrow/request` (user)
+- `GET /borrow/user` (user)
+- `GET /borrow/all` (admin)
+- `GET /borrows/history` (admin)
+- `DELETE /borrow/completed` (admin)
+- `PUT /borrow/approve/:id` (admin)
+- `PUT /borrow/reject/:id` (admin)
+- `PUT /borrow/return/:id` (user)
+- `PUT /borrow/confirm-return/:id` (admin)
 
-## Borrow Request Routes
-- **GET** `/api/borrow-requests`
-  - Description: Retrieves a list of all borrow requests (Admin only).
-  - Response: 
-    - `requests`: array of borrow request objects
+## Dashboards
 
-- **GET** `/api/borrow-requests/:id`
-  - Description: Retrieves details of a specific borrow request.
-  - Response: 
-    - `request`: borrow request object
+- `GET /dashboard/user` (user)
+- `GET /dashboard/admin` (admin)
 
-- **POST** `/api/borrow-requests`
-  - Description: Creates a new borrow request.
-  - Request Body: 
-    - `equipmentId`: string
-    - `userId`: string
-    - `borrowDate`: string (ISO date)
-    - `returnDate`: string (ISO date)
-  - Response: 
-    - `message`: string
+## Admin Users
 
-- **PUT** `/api/borrow-requests/:id`
-  - Description: Updates an existing borrow request (Admin only).
-  - Request Body: 
-    - `status`: string (e.g., "approved", "rejected")
-  - Response: 
-    - `message`: string
-
-- **DELETE** `/api/borrow-requests/:id`
-  - Description: Deletes a borrow request (Admin only).
-  - Response: 
-    - `message`: string
-
-## Audit Log Routes
-- **GET** `/api/audit-logs`
-  - Description: Retrieves a list of all audit logs (Admin only).
-  - Response: 
-    - `logs`: array of audit log objects
+- `GET /admin/users` (admin)
+- `DELETE /admin/users/:id` (admin)
 
 ## Notes
-- All routes require appropriate authentication and authorization based on user roles.
-- Ensure to handle errors and return meaningful messages for each route.
+
+- เส้นทางที่ระบุ `(admin)` ต้องใช้บัญชีผู้ดูแล
+- เส้นทางที่ระบุ `(user)` ต้องเข้าสู่ระบบด้วยบัญชีนักศึกษา

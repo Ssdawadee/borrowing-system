@@ -3,8 +3,10 @@ CREATE TABLE IF NOT EXISTS users (
     student_id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
+    phone TEXT NOT NULL DEFAULT '',
     password TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+    is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -15,6 +17,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     description TEXT,
     total_quantity INTEGER NOT NULL CHECK (total_quantity >= 0),
     available_quantity INTEGER NOT NULL CHECK (available_quantity >= 0),
+    damaged_quantity INTEGER NOT NULL DEFAULT 0 CHECK (damaged_quantity >= 0),
     image_url TEXT,
     status TEXT NOT NULL DEFAULT 'NORMAL' CHECK (status IN ('NORMAL', 'DAMAGED'))
 );

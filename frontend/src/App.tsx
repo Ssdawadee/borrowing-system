@@ -17,10 +17,13 @@ import StatCard from './runtime/components/StatCard';
 import { clearSession, getRoleHomePath, getStoredSession, saveSession } from './runtime/lib/auth';
 import { api, getErrorMessage } from './runtime/lib/api';
 import {
+  AdminUserSummary,
   AdminDashboardResponse,
   BorrowRecord,
   CategoryItem,
   EquipmentItem,
+  PaginationInfo,
+  PaginatedResponse,
   Session,
   UserDashboardResponse,
   UserRole,
@@ -29,6 +32,7 @@ import {
 interface AuthFormState {
   student_id: string;
   name: string;
+  phone: string;
   password: string;
   confirmPassword: string;
 }
@@ -43,6 +47,7 @@ interface BorrowRequestFormState {
 const initialAuthForm: AuthFormState = {
   student_id: '',
   name: '',
+  phone: '',
   password: '',
   confirmPassword: '',
 };
@@ -55,6 +60,7 @@ const initialBorrowForm: BorrowRequestFormState = {
 };
 
 const getBorrowQuantityLimit = (availableQuantity: number) => Math.max(1, Math.min(3, availableQuantity));
+const isValidPhone = (value: string) => /^\d{10}$/.test(value.trim());
 
 const defaultCategoryValues = ['Audio', 'Computing', 'Media', 'Presentation'];
 const defaultCategoryItems: CategoryItem[] = defaultCategoryValues.map((name, index) => ({ id: index + 1, name }));
@@ -133,6 +139,24 @@ const formatTimeHM = (value?: string | null) => {
     minute: '2-digit',
     hour12: false,
   }).format(date);
+};
+
+const buildBorrowRequestOrderLookup = (records: BorrowRecord[]) => {
+  const ordered = [...records].sort((a, b) => {
+    const aTime = parseApiDate(a.borrow_date)?.getTime() || 0;
+    const bTime = parseApiDate(b.borrow_date)?.getTime() || 0;
+
+    if (aTime === bTime) {
+      return a.id - b.id;
+    }
+
+    return aTime - bTime;
+  });
+
+  return ordered.reduce<Record<number, number>>((accumulator, record, index) => {
+    accumulator[record.id] = index + 1;
+    return accumulator;
+  }, {});
 };
 
 const parseBorrowDateInput = (value: string) => {
@@ -245,6 +269,42 @@ const getStatusBadgeClass = (status: string) => {
 };
 
 const isValidStudentId = (value: string) => /^b\d{10}$/i.test(value.trim());
+
+const replayAlertMessage = (setter: (value: string) => void, message: string) => {
+  setter('');
+  window.setTimeout(() => {
+    setter(message);
+  }, 0);
+};
+
+const FloatingAlerts = ({ error, success }: { error?: string; success?: string }) => {
+  const alerts = [
+    success ? { key: 'success', message: success, variant: 'success' as const } : null,
+    error ? { key: 'error', message: error, variant: 'error' as const } : null,
+  ].filter((item): item is { key: string; message: string; variant: 'success' | 'error' } => Boolean(item));
+
+  if (!alerts.length) {
+    return null;
+  }
+
+  return (
+    <div className="pointer-events-none fixed left-1/2 top-24 z-40 flex w-[min(90vw,42rem)] -translate-x-1/2 flex-col gap-3">
+      {alerts.map((alert) => (
+        <div
+          key={alert.key}
+          role="alert"
+          className={`floating-alert rounded-2xl px-4 py-3 text-sm shadow-panel ${
+            alert.variant === 'success'
+              ? 'floating-alert--success bg-emerald-50 text-emerald-700'
+              : 'bg-rose-50 text-rose-700'
+          }`}
+        >
+          {alert.message}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const AuthShell = ({ children }: { children: ReactNode }) => (
   <div className="campus-hero flex min-h-screen items-center justify-center px-4 py-10">
@@ -382,7 +442,7 @@ const LoginPage = ({ onAuthenticated }: { onAuthenticated: (session: Session) =>
             </button>
           </div>
         </label>
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} />
         <button
           type="submit"
           disabled={loading}
@@ -438,6 +498,11 @@ const RegisterPage = () => {
       return;
     }
 
+    if (!isValidPhone(form.phone)) {
+      setError('กรุณากรอกเบอร์โทรเป็นตัวเลข 10 หลัก');
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
       return;
@@ -449,6 +514,7 @@ const RegisterPage = () => {
       await api.post<Session>('/auth/register', {
         student_id: form.student_id,
         name: form.name,
+        phone: form.phone,
         password: form.password,
       });
       setSuccessMessage('สมัครสมาชิกเรียบร้อยแล้ว กรุณาเข้าสู่ระบบ');
@@ -473,6 +539,7 @@ const RegisterPage = () => {
         {[
           ['student_id', 'รหัสนักศึกษา'],
           ['name', 'ชื่อ - นามสกุล'],
+          ['phone', 'เบอร์โทร'],
           ['password', 'รหัสผ่าน'],
           ['confirmPassword', 'ยืนยันรหัสผ่าน'],
         ].map(([field, label]) => (
@@ -515,10 +582,10 @@ const RegisterPage = () => {
               <input
                 className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 outline-none transition focus:border-cardinal"
                 type="text"
-                inputMode={field === 'student_id' ? 'text' : undefined}
-                pattern={field === 'student_id' ? 'b\\d{10}' : undefined}
-                maxLength={field === 'student_id' ? 11 : undefined}
-                placeholder={field === 'student_id' ? 'เช่น b1234567890' : undefined}
+                inputMode={field === 'phone' ? 'numeric' : field === 'student_id' ? 'text' : undefined}
+                pattern={field === 'student_id' ? 'b\\d{10}' : field === 'phone' ? '\\d{10}' : undefined}
+                maxLength={field === 'student_id' ? 11 : field === 'phone' ? 10 : undefined}
+                placeholder={field === 'student_id' ? 'เช่น b1234567890' : field === 'phone' ? 'เช่น 0812345678' : undefined}
                 value={form[field as keyof AuthFormState]}
                 onChange={(event) => updateField(field as keyof AuthFormState, event.target.value)}
                 required
@@ -526,8 +593,7 @@ const RegisterPage = () => {
             )}
           </label>
         ))}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
-        {successMessage ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{successMessage}</p> : null}
+        <FloatingAlerts error={error} success={successMessage} />
         <button
           type="submit"
           disabled={loading}
@@ -611,11 +677,6 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
       return;
     }
 
-    if (selectedEquipment.status === 'DAMAGED') {
-      setError('ไม่สามารถยืมอุปกรณ์ที่ชำรุดได้');
-      return;
-    }
-
     if (!Number.isInteger(borrowForm.quantity) || borrowForm.quantity < 1) {
       setError('กรุณาระบุจำนวนที่ต้องการยืมอย่างน้อย 1 ชิ้น');
       return;
@@ -683,7 +744,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
         quantity: borrowForm.quantity,
       });
       setSubmissionState('success');
-      setMessage('ส่งคำขอยืมอุปกรณ์เรียบร้อยแล้ว กรุณารอผู้ดูแลอนุมัติ');
+      replayAlertMessage(setMessage, 'ส่งคำขอยืมอุปกรณ์เรียบร้อยแล้ว กรุณารอผู้ดูแลอนุมัติ');
       closeBorrowDialog();
       fetchEquipment();
     } catch (requestError) {
@@ -761,8 +822,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
             </select>
           </div>
         </div>
-        {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} success={message} />
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {equipment.map((item: EquipmentItem) => (
             <article key={item.id} className="glass-panel overflow-hidden p-0">
@@ -771,11 +831,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
                 <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-ink">
                   {getCategoryLabel(item.category)}
                 </span>
-                <span
-                  className={`absolute right-3 top-14 rounded-full px-3 py-1 text-xs font-semibold ${item.status === 'DAMAGED' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}
-                >
-                  {getStatusLabel(item.status)}
-                </span>
+
               </div>
               <div className="space-y-3 p-4">
                 <h3 className="text-3xl font-semibold leading-tight text-ink">{item.name}</h3>
@@ -893,7 +949,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
                       className="min-h-36 w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 outline-none focus:border-cardinal"
                     />
                   </label>
-                  {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+                  <FloatingAlerts error={error} />
                   <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                     <button
                       type="button"
@@ -1032,29 +1088,31 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
             <table>
               <thead>
                 <tr>
-                  <th>เวลายืม</th>
+                  <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
+                  <th>เวลายืม</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
-                  <th>เหตุผลในการยืม</th>
                   <th>เวลาส่งคืน</th>
+                  <th>เหตุผลในการยืม</th>
                   <th>สถานะ</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedRecords.map((record: BorrowRecord) => (
+                {sortedRecords.map((record: BorrowRecord, index) => (
                   <tr key={record.id}>
-                    <td>{formatTimeHM(record.borrow_date)}</td>
+                    <td>{index + 1}</td>
                     <td>
                       <div className="font-semibold text-ink">{record.equipment_name}</div>
                       <div className="text-xs text-stone-500">{getCategoryLabel(record.category || '')}</div>
                     </td>
+                    <td>{formatTimeHM(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
+                    <td>{formatTimeHM(record.return_date)}</td>
                     <td>
                       <p className="max-w-[340px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                     </td>
-                    <td>{formatTimeHM(record.return_date)}</td>
                     <td>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
                         {getStatusIcon(record.status)} {getStatusLabel(record.status)}
@@ -1071,7 +1129,7 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
             </div>
           ) : null}
         </div>
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} />
       </div>
     </AppLayout>
   );
@@ -1103,7 +1161,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
 
     try {
       await api.put(`/borrow/return/${id}`);
-      setMessage('ส่งคำขอคืนอุปกรณ์เรียบร้อยแล้ว กรุณารอผู้ดูแลยืนยัน');
+      replayAlertMessage(setMessage, 'ส่งคำขอคืนอุปกรณ์เรียบร้อยแล้ว กรุณารอผู้ดูแลยืนยัน');
       loadRecords();
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถส่งคำขอคืนได้'));
@@ -1125,8 +1183,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
   return (
     <AppLayout user={session.user} title="คืนอุปกรณ์" onLogout={onLogout}>
       <div className="space-y-6">
-        {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} success={message} />
 
         <section className="glass-panel p-6">
           <h3 className="text-2xl font-semibold text-ink">รายการที่ยืมอยู่ในปัจจุบัน</h3>
@@ -1135,25 +1192,33 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
             <table>
               <thead>
                 <tr>
+                  <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>วันที่ยืม</th>
                   <th>เวลายืม</th>
+                  <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
+                  <th>เหตุผลในการยืม</th>
                   <th>เวลาส่งคืน</th>
-                  <th>เหตุผล</th>
+                  <th>สถานะ</th>
                   <th>ยืนยันการคืน</th>
                 </tr>
               </thead>
               <tbody>
-                {activeBorrows.map((record) => (
+                {activeBorrows.map((record, index) => (
                   <tr key={record.id}>
+                    <td>{index + 1}</td>
                     <td>{record.equipment_name}</td>
-                    <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatTimeHM(record.borrow_date)}</td>
+                    <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
-                    <td>{formatTimeHM(record.return_date)}</td>
                     <td>
                       <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
+                    </td>
+                    <td>{formatTimeHM(record.return_date)}</td>
+                    <td>
+                      <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(record.status)}`}>
+                        {getStatusIcon(record.status)} {getStatusLabel(record.status)}
+                      </span>
                     </td>
                     <td>
                       <button
@@ -1185,20 +1250,22 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
             <table>
               <thead>
                 <tr>
-                  <th>เวลายืม</th>
+                  <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
+                  <th>เวลายืม</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
-                  <th>เหตุผล</th>
+                  <th>เหตุผลในการยืม</th>
                   <th>เวลาส่งคืน</th>
                   <th>สถานะ</th>
                 </tr>
               </thead>
               <tbody>
-                {pendingReturns.map((record) => (
+                {pendingReturns.map((record, index) => (
                   <tr key={record.id}>
-                    <td>{formatTimeHM(record.borrow_date)}</td>
+                    <td>{index + 1}</td>
                     <td>{record.equipment_name}</td>
+                    <td>{formatTimeHM(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
                     <td>
@@ -1258,7 +1325,7 @@ const UserDashboardPage = ({ session, onLogout }: { session: Session; onLogout: 
   return (
     <AppLayout user={session.user} title="แดชบอร์ดนักศึกษา" onLogout={onLogout}>
       <div className="space-y-6">
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} />
         <div className="grid gap-5 md:grid-cols-3">
           <StatCard label="กำลังยืมอยู่" value={data?.stats.borrowedCount || 0} icon="📘" />
           <StatCard label="คำขอรออนุมัติ" value={data?.stats.pendingCount || 0} accent="from-amber-400 to-orange-500" icon="⏳" />
@@ -1341,6 +1408,28 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
     );
   }, [data?.pendingRequests, requestSearchKeyword]);
 
+  const sortedPendingRequests = useMemo(() => {
+    const items = [...filteredPendingRequests];
+
+    items.sort((a, b) => {
+      const aTime = parseApiDate(a.borrow_date)?.getTime() || 0;
+      const bTime = parseApiDate(b.borrow_date)?.getTime() || 0;
+
+      if (aTime === bTime) {
+        return a.id - b.id;
+      }
+
+      return aTime - bTime;
+    });
+
+    return items;
+  }, [filteredPendingRequests]);
+
+  const requestOrderLookup = useMemo(
+    () => buildBorrowRequestOrderLookup(sortedPendingRequests),
+    [sortedPendingRequests]
+  );
+
   useEffect(() => {
     api
       .get<AdminDashboardResponse>('/dashboard/admin')
@@ -1351,8 +1440,9 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
   return (
     <AppLayout user={session.user} title="แดชบอร์ดผู้ดูแล" onLogout={onLogout}>
       <div className="space-y-6">
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
-        <div className="grid gap-5 md:grid-cols-4">
+        <FloatingAlerts error={error} />
+        <div className="grid gap-5 md:grid-cols-5">
+          <StatCard label="ผู้ใช้ทั้งหมด" value={data?.stats.totalUsers || 0} accent="from-indigo-500 to-sky-600" icon="👥" />
           <StatCard label="รายการอุปกรณ์" value={data?.stats.totalEquipment || 0} icon="📦" />
           <StatCard label="จำนวนคงเหลือ" value={data?.stats.availableUnits || 0} accent="from-emerald-500 to-teal-600" icon="📊" />
           <StatCard label="คำขอรออนุมัติ" value={data?.stats.pendingRequests || 0} accent="from-amber-400 to-orange-500" icon="⏳" />
@@ -1376,23 +1466,32 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
             <table>
               <thead>
                 <tr>
+                  <th>ลำดับ</th>
                   <th>ผู้ยืม</th>
                   <th>อุปกรณ์</th>
-                  <th>วันที่ยืม</th>
+                  <th>จำนวนที่ยืม</th>
                   <th>เวลายืม</th>
+                  <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
-                  <th>เหตุผล</th>
+                  <th>เวลาส่งคืน</th>
+                  <th>เหตุผลการยืม</th>
                   <th>สถานะ</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredPendingRequests.map((request: AdminDashboardResponse['pendingRequests'][number]) => (
+                {sortedPendingRequests.map((request: AdminDashboardResponse['pendingRequests'][number]) => (
                   <tr key={request.id}>
-                    <td>{request.user_name}</td>
+                    <td>{requestOrderLookup[request.id] ?? '-'}</td>
+                    <td>
+                      <div className="font-semibold text-ink">{request.user_name}</div>
+                      <div className="text-xs text-stone-500">{request.student_id}</div>
+                    </td>
                     <td>{request.equipment_name}</td>
-                    <td>{formatDateDMY(request.borrow_date)}</td>
+                    <td>{request.quantity ?? 1}</td>
                     <td>{formatTimeHM(request.borrow_date)}</td>
+                    <td>{formatDateDMY(request.borrow_date)}</td>
                     <td>{formatDateDMY(request.due_date)}</td>
+                    <td>{formatTimeHM(request.return_date)}</td>
                     <td>
                       <p className="max-w-[360px] text-sm text-stone-700">{request.borrow_reason || '-'}</p>
                     </td>
@@ -1417,18 +1516,237 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
   );
 };
 
+const ManageUsersPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
+  const [users, setUsers] = useState<AdminUserSummary[]>([]);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'overdue'>('all');
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
+  const [deleteConfirmUserId, setDeleteConfirmUserId] = useState<number | null>(null);
+
+  const loadUsers = async () => {
+    try {
+      const response = await api.get<AdminUserSummary[]>('/admin/users');
+      setUsers(response.data);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'ไม่สามารถโหลดข้อมูลผู้ใช้ได้'));
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const filteredUsers = useMemo(() => {
+    const keyword = searchKeyword.trim().toLowerCase();
+
+    return users.filter((user) => {
+      if (statusFilter === 'overdue' && !user.has_overdue) {
+        return false;
+      }
+
+      if (!keyword) {
+        return true;
+      }
+
+      return (
+        user.name.toLowerCase().includes(keyword) ||
+        user.student_id.toLowerCase().includes(keyword) ||
+        (user.phone || '').toLowerCase().includes(keyword)
+      );
+    });
+  }, [users, searchKeyword, statusFilter]);
+
+  const removeUser = async (id: number | null) => {
+    if (id === null) {
+      return;
+    }
+
+    setDeletingUserId(id);
+    setError('');
+    setMessage('');
+
+    try {
+      await api.delete(`/admin/users/${id}`);
+      replayAlertMessage(setMessage, 'ลบผู้ใช้เรียบร้อยแล้ว');
+      await loadUsers();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'ไม่สามารถลบผู้ใช้ได้'));
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
+  return (
+    <AppLayout user={session.user} title="จัดการผู้ใช้" onLogout={onLogout}>
+      <div className="space-y-4">
+        <FloatingAlerts error={error} success={message} />
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-3xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm text-stone-500">ผู้ใช้ทั้งหมด</p>
+            <p className="mt-2 text-3xl font-semibold text-ink">{users.length}</p>
+          </div>
+          <div className="rounded-3xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm text-stone-500">มีของค้างคืน</p>
+            <p className="mt-2 text-3xl font-semibold text-amber-600">{users.filter((user) => user.has_unreturned).length}</p>
+          </div>
+          <div className="rounded-3xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm text-stone-500">เกินกำหนดคืน</p>
+            <p className="mt-2 text-3xl font-semibold text-rose-600">{users.filter((user) => user.has_overdue).length}</p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="inline-flex rounded-2xl border border-stone-200 bg-white/90 p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
+                statusFilter === 'all' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              ทั้งหมด
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('overdue')}
+              className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
+                statusFilter === 'overdue' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              เกินกำหนดคืน
+            </button>
+          </div>
+          <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
+            <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={(event) => setSearchKeyword(event.target.value)}
+              placeholder="ค้นหาชื่อ รหัสนิสิต หรือ เบอร์โทร..."
+              className="w-full border-0 bg-transparent px-0 py-0 text-sm text-stone-700 outline-none placeholder:text-stone-400"
+            />
+          </label>
+        </div>
+        <div className="rounded-2xl border border-stone-200 bg-white/70 px-4 py-3 text-xs text-stone-500 shadow-sm">
+          <span className="font-semibold text-stone-600">คำอธิบายสถานะ:</span>{' '}
+          <span>ปกติ = ไม่มีของค้างคืน,</span>{' '}
+          <span>มีของค้างคืน = ยังไม่คืนแต่ยังไม่เกินกำหนด,</span>{' '}
+          <span>เกินกำหนดคืน = ยังไม่คืนและเลยกำหนดแล้ว,</span>{' '}
+          <span>ยังไม่เคยยืม = ยังไม่มีประวัติการยืม</span>
+        </div>
+        <div className="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ผู้ใช้</th>
+                <th>เบอร์โทร</th>
+                <th>วันที่สมัคร</th>
+                <th>จำนวนครั้งที่ยืม</th>
+                <th>ยืมล่าสุด</th>
+                <th>สถานะการยืม</th>
+                <th>การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user, index) => (
+                <tr key={user.id} className={user.has_overdue ? 'bg-rose-50/70' : ''}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <div className="font-semibold text-ink">{user.name}</div>
+                    <div className="text-xs text-stone-500">{user.student_id}</div>
+                  </td>
+                  <td>{user.phone || '-'}</td>
+                  <td>{formatDateDMY(user.created_at)}</td>
+                  <td>{user.borrow_count || 0}</td>
+                  <td>{user.latest_borrow_date ? formatDateDMY(user.latest_borrow_date) : '-'}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-2">
+                      {user.has_overdue ? (
+                        <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">เกินกำหนดคืน</span>
+                      ) : null}
+                      {!user.has_overdue && user.has_unreturned ? (
+                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">มีของค้างคืน</span>
+                      ) : null}
+                      {!user.has_overdue && !user.has_unreturned ? (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          {user.borrow_count > 0 ? 'ปกติ' : 'ยังไม่เคยยืม'}
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmUserId(user.id)}
+                      disabled={deletingUserId === user.id}
+                      className="rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+                    >
+                      {deletingUserId === user.id ? 'กำลังลบ...' : 'ลบผู้ใช้'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!filteredUsers.length ? (
+          <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-6 text-center text-sm text-stone-500">
+            ไม่พบข้อมูลผู้ใช้
+          </div>
+        ) : null}
+        {deleteConfirmUserId !== null ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-sm">
+            <div className="glass-panel w-full max-w-md p-8">
+              <h3 className="text-xl font-semibold text-ink">ยืนยันการลบผู้ใช้</h3>
+              <p className="mt-3 text-sm text-stone-600">
+                คุณต้องการลบ{' '}
+                <span className="font-semibold text-ink">{users.find((item) => item.id === deleteConfirmUserId)?.name}</span>{' '}
+                ออกจากระบบหรือไม่? การลบไม่สามารถย้อนกลับได้
+              </p>
+              <p className="mt-2 text-xs text-amber-700">
+                หมายเหตุ: ถ้าผู้ใช้นี้มีรายการยืมหรือคืนค้าง ระบบจะไม่อนุญาตให้ลบ
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmUserId(null)}
+                  className="rounded-full border border-stone-200 bg-white px-5 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { const id = deleteConfirmUserId; setDeleteConfirmUserId(null); removeUser(id); }}
+                  className="rounded-full bg-rose-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+                >
+                  ลบผู้ใช้
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </AppLayout>
+  );
+};
+
 const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
   const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>(defaultCategoryItems);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [editingItem, setEditingItem] = useState<EquipmentItem | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', total_quantity: 1, damaged_quantity: 0, image_url: '', category: '' });
   const [form, setForm] = useState({
     name: '',
     category: 'Media',
     description: '',
     total_quantity: 1,
     available_quantity: 1,
+    damaged_quantity: 0,
     image_url: '',
     status: 'NORMAL',
   });
@@ -1476,15 +1794,17 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
       await api.post('/equipment', {
         ...form,
         total_quantity: Number(form.total_quantity),
-        available_quantity: Number(form.available_quantity),
+        damaged_quantity: Number(form.damaged_quantity),
+        available_quantity: Math.max(0, Number(form.total_quantity) - Number(form.damaged_quantity)),
       });
-      setMessage('เพิ่มอุปกรณ์เรียบร้อยแล้ว');
+      replayAlertMessage(setMessage, 'เพิ่มอุปกรณ์เรียบร้อยแล้ว');
       setForm({
         name: '',
         category: 'Media',
         description: '',
         total_quantity: 1,
         available_quantity: 1,
+        damaged_quantity: 0,
         image_url: '',
         status: 'NORMAL',
       });
@@ -1494,19 +1814,40 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
     }
   };
 
-  const toggleDamage = async (item: EquipmentItem) => {
+  const openEdit = (item: EquipmentItem) => {
+    setEditingItem(item);
+    setEditForm({
+      name: item.name,
+      description: item.description,
+      total_quantity: item.total_quantity,
+      damaged_quantity: item.damaged_quantity || 0,
+      image_url: item.image_url,
+      category: item.category,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingItem) return;
     setError('');
     setMessage('');
-
+    const total = Math.max(1, Number(editForm.total_quantity));
+    const damaged = Math.min(Math.max(0, Number(editForm.damaged_quantity)), total);
     try {
-      await api.put(`/equipment/${item.id}`, {
-        ...item,
-        status: item.status === 'NORMAL' ? 'DAMAGED' : 'NORMAL',
+      await api.put(`/equipment/${editingItem.id}`, {
+        ...editingItem,
+        name: editForm.name,
+        description: editForm.description,
+        total_quantity: total,
+        damaged_quantity: damaged,
+        available_quantity: Math.max(0, total - damaged),
+        image_url: editForm.image_url,
+        category: editForm.category,
       });
-      setMessage('อัปเดตสถานะอุปกรณ์เรียบร้อยแล้ว');
+      replayAlertMessage(setMessage, 'แก้ไขอุปกรณ์เรียบร้อยแล้ว');
+      setEditingItem(null);
       loadEquipment();
     } catch (requestError) {
-      setError(getErrorMessage(requestError, 'ไม่สามารถอัปเดตสถานะอุปกรณ์ได้'));
+      setError(getErrorMessage(requestError, 'ไม่สามารถแก้ไขอุปกรณ์ได้'));
     }
   };
 
@@ -1516,7 +1857,7 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
 
     try {
       await api.delete(`/equipment/${id}`);
-      setMessage('ลบอุปกรณ์เรียบร้อยแล้ว');
+      replayAlertMessage(setMessage, 'ลบอุปกรณ์เรียบร้อยแล้ว');
       loadEquipment();
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถลบอุปกรณ์ได้'));
@@ -1525,12 +1866,11 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
 
   return (
     <AppLayout user={session.user} title="จัดการอุปกรณ์" onLogout={onLogout}>
+      <FloatingAlerts error={error} success={message} />
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="glass-panel p-6">
           <h3 className="text-xl font-semibold text-ink">เพิ่มอุปกรณ์</h3>
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
-            {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
             <input className="w-full rounded-2xl border border-stone-200 px-4 py-3" placeholder="ชื่ออุปกรณ์" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
             <label className="block space-y-2">
               <span className="text-sm font-medium text-stone-700">หมวดหมู่</span>
@@ -1557,28 +1897,48 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                   min="1"
                   placeholder="เช่น 20"
                   value={form.total_quantity}
-                  onChange={(event) => setForm({ ...form, total_quantity: Number(event.target.value) })}
+                  onChange={(event) => {
+                    const nextTotal = Number(event.target.value);
+                    const nextDamaged = Math.min(Number(form.damaged_quantity) || 0, Math.max(0, nextTotal));
+                    setForm({
+                      ...form,
+                      total_quantity: nextTotal,
+                      damaged_quantity: nextDamaged,
+                      available_quantity: Math.max(0, nextTotal - nextDamaged),
+                    });
+                  }}
                   required
                 />
               </label>
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">จำนวนที่พร้อมยืมตอนนี้ (เพิ่มครั้งนี้กี่ชิ้น)</span>
+                <span className="text-sm font-medium text-stone-700">จำนวนชำรุด</span>
                 <input
                   className="w-full rounded-2xl border border-stone-200 px-4 py-3"
                   type="number"
                   min="0"
-                  placeholder="เช่น 15"
-                  value={form.available_quantity}
-                  onChange={(event) => setForm({ ...form, available_quantity: Number(event.target.value) })}
+                  max={Math.max(0, Number(form.total_quantity) || 0)}
+                  placeholder="เช่น 5"
+                  value={form.damaged_quantity}
+                  onChange={(event) => {
+                    const nextDamagedRaw = Number(event.target.value);
+                    const safeTotal = Math.max(0, Number(form.total_quantity) || 0);
+                    const nextDamaged = Math.min(Math.max(0, nextDamagedRaw), safeTotal);
+                    setForm({
+                      ...form,
+                      damaged_quantity: nextDamaged,
+                      available_quantity: Math.max(0, safeTotal - nextDamaged),
+                    });
+                  }}
                   required
                 />
               </label>
+              <div className="md:col-span-2">
+                <div className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
+                  พร้อมใช้: {Math.max(0, Number(form.total_quantity) - Number(form.damaged_quantity))} / {Number(form.total_quantity) || 0} · ชำรุด: {Number(form.damaged_quantity) || 0}
+                </div>
+              </div>
             </div>
             <input className="w-full rounded-2xl border border-stone-200 px-4 py-3" placeholder="ลิงก์รูปภาพ" value={form.image_url} onChange={(event) => setForm({ ...form, image_url: event.target.value })} />
-            <select className="w-full rounded-2xl border border-stone-200 px-4 py-3" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
-              <option value="NORMAL">ปกติ</option>
-              <option value="DAMAGED">ชำรุด</option>
-            </select>
             <button type="submit" className="w-full rounded-2xl bg-cardinal px-4 py-3 font-semibold text-white">บันทึกอุปกรณ์</button>
           </form>
         </section>
@@ -1601,20 +1961,20 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                     <div className="text-xs text-stone-500">{item.description}</div>
                   </td>
                   <td>{getCategoryLabel(item.category)}</td>
-                  <td>{item.available_quantity}/{item.total_quantity}</td>
-                  <td>{getStatusLabel(item.status)}</td>
+                  <td>{item.available_quantity}/{item.total_quantity} (ชำรุด {item.damaged_quantity || 0})</td>
+                  <td>{item.damaged_quantity > 0 ? 'ชำรุด' : 'ปกติ'}</td>
                   <td>
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => toggleDamage(item)}
-                        className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-amber-600"
+                        onClick={() => openEdit(item)}
+                        className="rounded-full bg-sky-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-sky-600"
                       >
-                        สลับสถานะ
+                        แก้ไข
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => setDeleteConfirmId(item.id)}
                         className="rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-rose-700"
                       >
                         ลบ
@@ -1646,11 +2006,66 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
               </button>
               <button
                 type="button"
-                onClick={() => { const id = deleteConfirmId; setDeleteConfirmId(null); removeItem(id); }}
+                onClick={() => {
+                  const id = deleteConfirmId;
+                  setDeleteConfirmId(null);
+                  if (id !== null) {
+                    removeItem(id);
+                  }
+                }}
                 className="rounded-full bg-rose-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
               >
                 ลบอุปกรณ์
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {editingItem ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 px-4 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-lg p-8">
+            <h3 className="text-xl font-semibold text-ink">แก้ไขอุปกรณ์</h3>
+            <div className="mt-5 space-y-4">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-stone-700">ชื่ออุปกรณ์</span>
+                <input className="w-full rounded-2xl border border-stone-200 px-4 py-3" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-stone-700">รายละเอียด</span>
+                <textarea className="min-h-20 w-full rounded-2xl border border-stone-200 px-4 py-3" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+              </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-stone-700">จำนวนทั้งหมด</span>
+                  <input className="w-full rounded-2xl border border-stone-200 px-4 py-3" type="number" min="1" value={editForm.total_quantity}
+                    onChange={(e) => {
+                      const t = Math.max(1, Number(e.target.value));
+                      const d = Math.min(Number(editForm.damaged_quantity), t);
+                      setEditForm({ ...editForm, total_quantity: t, damaged_quantity: d });
+                    }}
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-stone-700">จำนวนชำรุด</span>
+                  <input className="w-full rounded-2xl border border-stone-200 px-4 py-3" type="number" min="0" max={editForm.total_quantity} value={editForm.damaged_quantity}
+                    onChange={(e) => {
+                      const d = Math.min(Math.max(0, Number(e.target.value)), Number(editForm.total_quantity));
+                      setEditForm({ ...editForm, damaged_quantity: d });
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
+                พร้อมใช้: {Math.max(0, Number(editForm.total_quantity) - Number(editForm.damaged_quantity))} / {Number(editForm.total_quantity)} · ชำรุด: {Number(editForm.damaged_quantity)}
+              </div>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-stone-700">ลิงก์รูปภาพ</span>
+                <input className="w-full rounded-2xl border border-stone-200 px-4 py-3" value={editForm.image_url} onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })} />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditingItem(null)} className="rounded-full border border-stone-200 bg-white px-5 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">ยกเลิก</button>
+              <button type="button" onClick={saveEdit} className="rounded-full bg-cardinal px-5 py-2 text-sm font-semibold text-white transition hover:bg-brick">บันทึก</button>
             </div>
           </div>
         </div>
@@ -1664,6 +2079,7 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
   const [newCategoryName, setNewCategoryName] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<CategoryItem | null>(null);
 
   const loadCategories = async () => {
     try {
@@ -1679,6 +2095,30 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
     loadCategories();
   }, []);
 
+  useEffect(() => {
+    if (!message) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setMessage('');
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [message]);
+
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setError('');
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [error]);
+
   const addCategory = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
@@ -1691,7 +2131,7 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
 
     try {
       await api.post('/categories', { name: newCategoryName.trim() });
-      setMessage('เพิ่มหมวดหมู่เรียบร้อยแล้ว');
+      replayAlertMessage(setMessage, 'เพิ่มหมวดหมู่เรียบร้อยแล้ว');
       setNewCategoryName('');
       await loadCategories();
     } catch (requestError) {
@@ -1705,7 +2145,7 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
 
     try {
       await api.delete(`/categories/${id}`);
-      setMessage(`ลบหมวดหมู่ ${getCategoryLabel(name)} เรียบร้อยแล้ว`);
+      replayAlertMessage(setMessage, `ลบหมวดหมู่ ${getCategoryLabel(name)} เรียบร้อยแล้ว`);
       await loadCategories();
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถลบหมวดหมู่ได้'));
@@ -1714,8 +2154,7 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
 
   return (
     <AppLayout user={session.user} title="จัดการหมวดหมู่" onLogout={onLogout}>
-      {error && <div className="mb-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
-      {message && <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-700">{message}</div>}
+      <FloatingAlerts error={error} success={message} />
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="glass-panel p-6">
           <h3 className="text-xl font-semibold text-ink">เพิ่มหมวดหมู่ใหม่</h3>
@@ -1740,7 +2179,7 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
                 <span className="font-semibold text-ink">{getCategoryLabel(categoryItem.name)}</span>
                 <button
                   type="button"
-                  onClick={() => removeCategory(categoryItem.id, categoryItem.name)}
+                  onClick={() => setDeleteCategoryTarget(categoryItem)}
                   className="rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-rose-700"
                 >
                   ลบ
@@ -1750,6 +2189,40 @@ const ManageCategoriesPage = ({ session, onLogout }: { session: Session; onLogou
           </div>
         </section>
       </div>
+      {deleteCategoryTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-md p-8">
+            <h3 className="text-xl font-semibold text-ink">ยืนยันการลบหมวดหมู่</h3>
+            <p className="mt-3 text-sm text-stone-600">
+              คุณต้องการลบ{' '}
+              <span className="font-semibold text-ink">{getCategoryLabel(deleteCategoryTarget.name)}</span>{' '}
+              ออกจากระบบหรือไม่? การลบไม่สามารถย้อนกลับได้
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteCategoryTarget(null)}
+                className="rounded-full border border-stone-200 bg-white px-5 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = deleteCategoryTarget;
+                  setDeleteCategoryTarget(null);
+                  if (target) {
+                    removeCategory(target.id, target.name);
+                  }
+                }}
+                className="rounded-full bg-rose-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+              >
+                ลบหมวดหมู่
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppLayout>
   );
 };
@@ -1760,7 +2233,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [requestSearchKeyword, setRequestSearchKeyword] = useState('');
-  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
+  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('oldest');
   const [confirmDialog, setConfirmDialog] = useState<{
     action: 'approve' | 'reject';
     id: number;
@@ -1811,7 +2284,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
   const approveRequest = async (id: number) => {
     try {
       await api.put(`/borrow/approve/${id}`);
-      setMessage('อนุมัติคำขอยืมเรียบร้อยแล้ว');
+      replayAlertMessage(setMessage, 'อนุมัติคำขอยืมเรียบร้อยแล้ว');
       setError('');
       loadRecords();
     } catch (requestError) {
@@ -1822,7 +2295,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
   const rejectRequest = async (id: number) => {
     try {
       await api.put(`/borrow/reject/${id}`);
-      setMessage('ปฏิเสธคำขอเรียบร้อยแล้ว');
+      replayAlertMessage(setMessage, 'ปฏิเสธคำขอเรียบร้อยแล้ว');
       setError('');
       loadRecords();
     } catch (requestError) {
@@ -1867,6 +2340,11 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
 
     return items;
   }, [filteredRecords, sortOrder]);
+
+  const requestOrderLookup = useMemo(
+    () => buildBorrowRequestOrderLookup(sortedRecords),
+    [sortedRecords]
+  );
 
   const openConfirmDialog = (action: 'approve' | 'reject', id: number, text: string) => {
     setConfirmDialog({ action, id, text });
@@ -1921,8 +2399,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
   return (
     <AppLayout user={session.user} title="อนุมัติคำขอ" onLogout={onLogout}>
       <div className="space-y-4">
-        {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} success={message} />
         <p className="text-sm font-medium text-stone-600">รายการคำขอทั้งหมด: {requests.length} รายการ</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex rounded-2xl border border-stone-200 bg-white/90 p-1 shadow-sm">
@@ -1960,37 +2437,39 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
           <table>
             <thead>
               <tr>
+                <th>ลำดับ</th>
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>วันที่ยืม</th>
                 <th>เวลายืม</th>
-                <th>เหตุผลการยืม</th>
-                <th>สถานะ</th>
+                <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>เวลาส่งคืน</th>
+                <th>เหตุผลการยืม</th>
+                <th>สถานะ</th>
                 <th>การดำเนินการ</th>
               </tr>
             </thead>
             <tbody>
               {sortedRecords.map((record: BorrowRecord) => (
                 <tr key={record.id}>
+                  <td>{requestOrderLookup[record.id] ?? '-'}</td>
                   <td>
                     <div className="font-semibold text-ink">{record.user_name}</div>
                     <div className="text-xs text-stone-500">{record.student_id}</div>
                   </td>
                   <td>{record.equipment_name ?? '-'}</td>
                   <td>{record.quantity ?? 1}</td>
-                  <td>{formatDateDMY(record.borrow_date)}</td>
                   <td>{formatTimeHM(record.borrow_date)}</td>
+                  <td>{formatDateDMY(record.borrow_date)}</td>
+                  <td>{formatDateDMY(record.due_date)}</td>
+                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>{record.borrow_reason ?? '-'}</td>
                   <td>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
                       {getStatusLabel(record.status)}
                     </span>
                   </td>
-                  <td>{formatDateDMY(record.due_date)}</td>
-                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>
                     <div className="flex flex-wrap gap-2">
                       {(() => {
@@ -1999,18 +2478,18 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
 
                         return (
                           <>
-                      <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
-                        คงเหลือ {available}/{total}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => openConfirmDialog('approve', record.id, 'คุณต้องการอนุมัติคำขอนี้หรือไม่?')}
-                        disabled={approveDisabled}
-                        title={approveDisabled ? 'อุปกรณ์นี้หมด ไม่พร้อมให้อนุมัติ' : undefined}
-                        className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
-                      >
-                        อนุมัติ
-                      </button>
+                            <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+                              คงเหลือ {available}/{total}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => openConfirmDialog('approve', record.id, 'คุณต้องการอนุมัติคำขอนี้หรือไม่?')}
+                              disabled={approveDisabled}
+                              title={approveDisabled ? 'อุปกรณ์นี้หมด ไม่พร้อมให้อนุมัติ' : undefined}
+                              className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+                            >
+                              อนุมัติ
+                            </button>
                           </>
                         );
                       })()}
@@ -2067,6 +2546,7 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [requestSearchKeyword, setRequestSearchKeyword] = useState('');
+  const [dueDateSort, setDueDateSort] = useState<'due-asc' | 'due-desc'>('due-asc');
   const [confirmReturnId, setConfirmReturnId] = useState<number | null>(null);
 
   const loadRecords = async () => {
@@ -2102,9 +2582,10 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
 
   const confirmReturn = async (id: number) => {
     try {
-      await api.put(`/borrow/confirm-return/${id}`);
-      setMessage('ยืนยันการคืนเรียบร้อยแล้ว');
+      setMessage('');
       setError('');
+      await api.put(`/borrow/confirm-return/${id}`);
+      replayAlertMessage(setMessage, 'ยืนยันการคืนเรียบร้อยแล้ว');
       loadRecords();
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถยืนยันการคืนได้'));
@@ -2130,9 +2611,42 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
     );
   }, [requests, requestSearchKeyword]);
 
+  const sortedRecords = useMemo(() => {
+    const items = [...filteredRecords];
+
+    items.sort((a, b) => {
+      const aDueTime = parseApiDate(a.due_date)?.getTime() || 0;
+      const bDueTime = parseApiDate(b.due_date)?.getTime() || 0;
+
+      if (aDueTime !== bDueTime) {
+        return dueDateSort === 'due-asc' ? aDueTime - bDueTime : bDueTime - aDueTime;
+      }
+
+      const aApprovedTime = parseApiDate(a.approved_at)?.getTime() || 0;
+      const bApprovedTime = parseApiDate(b.approved_at)?.getTime() || 0;
+
+      if (aApprovedTime !== bApprovedTime) {
+        return dueDateSort === 'due-asc' ? aApprovedTime - bApprovedTime : bApprovedTime - aApprovedTime;
+      }
+
+      return a.id - b.id;
+    });
+
+    return items;
+  }, [filteredRecords, dueDateSort]);
+
   const selectedReturnRecord = useMemo(
-    () => filteredRecords.find((record: BorrowRecord) => record.id === confirmReturnId) || null,
-    [filteredRecords, confirmReturnId]
+    () => sortedRecords.find((record: BorrowRecord) => record.id === confirmReturnId) || null,
+    [sortedRecords, confirmReturnId]
+  );
+
+  const requestOrderLookup = useMemo(
+    () =>
+      sortedRecords.reduce<Record<number, number>>((accumulator, record, index) => {
+        accumulator[record.id] = index + 1;
+        return accumulator;
+      }, {}),
+    [sortedRecords]
   );
 
   const runConfirmReturn = async () => {
@@ -2148,10 +2662,20 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
   return (
     <AppLayout user={session.user} title="ยืนยันการคืน" onLogout={onLogout}>
       <div className="space-y-4">
-        {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        <FloatingAlerts error={error} success={message} />
         <p className="text-sm font-medium text-stone-600">รายการคำขอทั้งหมด: {requests.length} รายการ (อนุมัติแล้ว/รอยืนยันการคืน)</p>
-        <div className="flex justify-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex items-center gap-2 text-sm text-stone-700">
+            <span className="font-medium">เรียงตาม</span>
+            <select
+              value={dueDateSort}
+              onChange={(event) => setDueDateSort(event.target.value as 'due-asc' | 'due-desc')}
+              className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700"
+            >
+              <option value="due-asc">กำหนดคืนก่อน</option>
+              <option value="due-desc">กำหนดคืนหลัง</option>
+            </select>
+          </label>
           <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
             <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
             <input
@@ -2167,29 +2691,36 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
           <table>
             <thead>
               <tr>
+                <th>ลำดับ</th>
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>วันที่ยืม</th>
                 <th>เวลายืม</th>
-                <th>เหตุผลการยืม</th>
-                <th>สถานะ</th>
+                <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>เวลาส่งคืน</th>
+                <th>เหตุผลการยืม</th>
+                <th>สถานะ</th>
+                <th>เวลาอนุมัติการยืม</th>
                 <th>การดำเนินการ</th>
               </tr>
             </thead>
             <tbody>
-              {filteredRecords.map((record: BorrowRecord) => (
-                <tr key={record.id}>
+              {sortedRecords.map((record: BorrowRecord) => {
+                const isOverdue = record.due_date && new Date(record.due_date) < new Date() && (record.status === 'APPROVED' || record.status === 'RETURN_PENDING');
+                return (
+                <tr key={record.id} className={isOverdue ? 'bg-red-50' : ''}>
+                  <td>{requestOrderLookup[record.id] ?? '-'}</td>
                   <td>
                     <div className="font-semibold text-ink">{record.user_name}</div>
                     <div className="text-xs text-stone-500">{record.student_id}</div>
                   </td>
                   <td>{record.equipment_name}</td>
                   <td>{record.quantity ?? 1}</td>
-                  <td>{formatDateDMY(record.borrow_date)}</td>
                   <td>{formatTimeHM(record.borrow_date)}</td>
+                  <td>{formatDateDMY(record.borrow_date)}</td>
+                  <td className={isOverdue ? 'font-semibold text-red-600' : ''}>{formatDateDMY(record.due_date)}{isOverdue ? ' ⚠️' : ''}</td>
+                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>
                     <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                   </td>
@@ -2198,8 +2729,7 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
                       {getStatusIcon(record.status)} {getStatusLabel(record.status)}
                     </span>
                   </td>
-                  <td>{formatDateDMY(record.due_date)}</td>
-                  <td>{formatTimeHM(record.return_date)}</td>
+                  <td>{formatTimeHM(record.approved_at)}</td>
                   <td>
                     <button
                       type="button"
@@ -2211,7 +2741,8 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -2260,29 +2791,33 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
 
 const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
   const [records, setRecords] = useState<BorrowRecord[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo>({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [requestSearchKeyword, setRequestSearchKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'returned' | 'rejected'>('all');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
 
-  const loadRecords = async () => {
+  const loadRecords = async (page: number = 1) => {
     try {
-      const response = await api.get<BorrowRecord[]>('/borrow/all');
-      setRecords(response.data);
+      const response = await api.get<PaginatedResponse<BorrowRecord>>(`/borrows/history?page=${page}&limit=10`);
+      setRecords(response.data.data);
+      setPagination(response.data.pagination);
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถโหลดรายการยืมทั้งหมดได้'));
     }
   };
 
   useEffect(() => {
-    loadRecords();
-    const interval = setInterval(loadRecords, 6000);
+    loadRecords(currentPage);
+    const interval = setInterval(() => loadRecords(currentPage), 6000);
     const handleWindowFocus = () => {
-      loadRecords();
+      loadRecords(currentPage);
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        loadRecords();
+        loadRecords(currentPage);
       }
     };
 
@@ -2294,26 +2829,38 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [currentPage]);
 
   const requests = useMemo(
     () => records.filter((record: BorrowRecord) => ['RETURNED', 'REJECTED'].includes(record.status)),
     [records]
   );
 
+  const statusFilteredRequests = useMemo(() => {
+    if (statusFilter === 'returned') {
+      return requests.filter((record) => record.status === 'RETURNED');
+    }
+
+    if (statusFilter === 'rejected') {
+      return requests.filter((record) => record.status === 'REJECTED');
+    }
+
+    return requests;
+  }, [requests, statusFilter]);
+
   const filteredRecords = useMemo(() => {
     const keyword = requestSearchKeyword.trim().toLowerCase();
 
     if (!keyword) {
-      return requests;
+      return statusFilteredRequests;
     }
 
-    return requests.filter((record) =>
+    return statusFilteredRequests.filter((record) =>
       (record.user_name || '').toLowerCase().includes(keyword) ||
       (record.student_id || '').toLowerCase().includes(keyword) ||
       (record.equipment_name || '').toLowerCase().includes(keyword)
     );
-  }, [requests, requestSearchKeyword]);
+  }, [statusFilteredRequests, requestSearchKeyword]);
 
   const sortedRecords = useMemo(() => {
     const items = [...filteredRecords];
@@ -2360,49 +2907,80 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
       const response = await api.delete<{ deletedCount: number }>('/borrow/completed');
       setMessage(`ล้างประวัติเรียบร้อยแล้ว ${response.data.deletedCount} รายการ`);
       setError('');
-      loadRecords();
+      const targetPage = currentPage > 1 ? currentPage - 1 : 1;
+      setCurrentPage(targetPage);
+      loadRecords(targetPage);
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถล้างประวัติได้'));
     }
   };
 
+  const handlePageChange = (page: number) => {
+    const totalPages = pagination.totalPages || 1;
+    if (page < 1 || page > totalPages || page === currentPage) {
+      return;
+    }
+
+    setCurrentPage(page);
+  };
+
+  const visiblePageNumbers = useMemo(() => {
+    if (!pagination.totalPages) {
+      return [] as number[];
+    }
+
+    return Array.from({ length: pagination.totalPages }, (_, index) => index + 1);
+  }, [pagination.totalPages]);
+
   return (
-    <AppLayout user={session.user} title="ประวัติดำเนินการที่เสร็จสิ้นแล้ว" onLogout={onLogout}>
+    <AppLayout user={session.user} title="ประวัติทั้งหมด" onLogout={onLogout}>
       <div className="space-y-4">
-        {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
-        <p className="text-sm font-medium text-stone-600">รายการคำขอทั้งหมด: {requests.length} รายการ (คืนแล้ว/ปฏิเสธแล้ว)</p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <FloatingAlerts error={error} success={message} />
+        <p className="text-sm font-medium text-stone-600">ทั้งหมด {pagination.total} รายการ</p>
+        <div className="history-toolbar flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-2xl border border-stone-200 bg-white/90 p-1 shadow-sm">
               <button
                 type="button"
-                onClick={() => setSortOrder('latest')}
+                onClick={() => setStatusFilter('all')}
                 className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
-                  sortOrder === 'latest' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
+                  statusFilter === 'all' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
                 }`}
               >
-                ล่าสุด
+                ทั้งหมด
               </button>
               <button
                 type="button"
-                onClick={() => setSortOrder('oldest')}
+                onClick={() => setStatusFilter('returned')}
                 className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
-                  sortOrder === 'oldest' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
+                  statusFilter === 'returned' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
                 }`}
               >
-                เก่าสุด
+                คืนแล้ว
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('rejected')}
+                className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition ${
+                  statusFilter === 'rejected' ? 'bg-cardinal text-white' : 'text-stone-700 hover:bg-stone-100'
+                }`}
+              >
+                ปฏิเสธ
               </button>
             </div>
-            <button
-              type="button"
-              onClick={clearCompletedHistory}
-              className="rounded-xl bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-rose-700"
-            >
-              ล้างประวัติที่เสร็จสิ้นแล้ว
-            </button>
           </div>
-          <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
+          <label className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm">
+            <span className="text-sm font-medium text-stone-600">Sort</span>
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as 'latest' | 'oldest')}
+              className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 outline-none"
+            >
+              <option value="latest">ล่าสุด</option>
+              <option value="oldest">เก่าสุด</option>
+            </select>
+          </label>
+          <label className="flex min-w-[260px] flex-1 items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm lg:max-w-md">
             <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
             <input
               type="text"
@@ -2412,6 +2990,13 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
               className="w-full border-0 bg-transparent px-0 py-0 text-sm text-stone-700 outline-none placeholder:text-stone-400"
             />
           </label>
+          <button
+            type="button"
+            onClick={clearCompletedHistory}
+            className="rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 lg:ml-auto"
+          >
+            ล้างประวัติที่เสร็จแล้ว
+          </button>
         </div>
         <div className="table-shell">
           <table>
@@ -2421,11 +3006,11 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เหตุผลการยืม</th>
-                <th>วันที่ยืม</th>
                 <th>เวลายืม</th>
+                <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>เวลาส่งคืน</th>
+                <th>เหตุผลการยืม</th>
                 <th>สถานะ</th>
               </tr>
             </thead>
@@ -2439,13 +3024,13 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
                   </td>
                   <td>{record.equipment_name}</td>
                   <td>{record.quantity ?? 1}</td>
+                  <td>{formatTimeHM(record.borrow_date)}</td>
+                  <td>{formatDateDMY(record.borrow_date)}</td>
+                  <td>{formatDateDMY(record.due_date)}</td>
+                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>
                     <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                   </td>
-                  <td>{formatDateDMY(record.borrow_date)}</td>
-                  <td>{formatTimeHM(record.borrow_date)}</td>
-                  <td>{formatDateDMY(record.due_date)}</td>
-                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>
                     <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(record.status)}`}>
                       {getStatusIcon(record.status)} {getStatusLabel(record.status)}
@@ -2459,6 +3044,40 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
         {!sortedRecords.length ? (
           <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-6 text-center text-sm text-stone-500">
             ไม่พบข้อมูล
+          </div>
+        ) : null}
+        {pagination.totalPages > 0 ? (
+          <div className="history-pagination flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="rounded-xl border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            {visiblePageNumbers.map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                onClick={() => handlePageChange(pageNumber)}
+                className={`rounded-xl border px-3 py-1.5 text-sm font-semibold transition ${
+                  pageNumber === currentPage
+                    ? 'border-cardinal bg-cardinal text-white'
+                    : 'border-stone-300 text-stone-700 hover:bg-stone-100'
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= pagination.totalPages}
+              className="rounded-xl border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         ) : null}
       </div>
@@ -2530,6 +3149,14 @@ const App = () => {
         element={
           <RequireAuth session={session} role="admin">
             {session ? <AdminDashboardPage session={session} onLogout={handleLogout} /> : null}
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <RequireAuth session={session} role="admin">
+            {session ? <ManageUsersPage session={session} onLogout={handleLogout} /> : null}
           </RequireAuth>
         }
       />
