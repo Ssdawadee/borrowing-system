@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { getStoredSession } from './auth';
 
-const defaultApiBaseUrl = `${window.location.protocol}//${window.location.hostname}:5000/api`;
+const defaultApiBaseUrl = import.meta.env.DEV
+  ? '/api'
+  : `${window.location.protocol}//${window.location.hostname}:5000/api`;
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || defaultApiBaseUrl,
