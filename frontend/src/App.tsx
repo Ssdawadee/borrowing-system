@@ -277,10 +277,57 @@ const replayAlertMessage = (setter: (value: string) => void, message: string) =>
   }, 0);
 };
 
-const FloatingAlerts = ({ error, success }: { error?: string; success?: string }) => {
+const FloatingAlerts = ({
+  error,
+  success,
+  onClearError,
+  onClearSuccess,
+}: {
+  error?: string;
+  success?: string;
+  onClearError?: () => void;
+  onClearSuccess?: () => void;
+}) => {
+  const [isErrorVisible, setIsErrorVisible] = useState(Boolean(error));
+  const [isSuccessVisible, setIsSuccessVisible] = useState(Boolean(success));
+
+  useEffect(() => {
+    setIsErrorVisible(Boolean(error));
+  }, [error]);
+
+  useEffect(() => {
+    setIsSuccessVisible(Boolean(success));
+  }, [success]);
+
+  useEffect(() => {
+    if (!error || !isErrorVisible) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsErrorVisible(false);
+      onClearError?.();
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [error, isErrorVisible, onClearError]);
+
+  useEffect(() => {
+    if (!success || !isSuccessVisible) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsSuccessVisible(false);
+      onClearSuccess?.();
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [success, isSuccessVisible, onClearSuccess]);
+
   const alerts = [
-    success ? { key: 'success', message: success, variant: 'success' as const } : null,
-    error ? { key: 'error', message: error, variant: 'error' as const } : null,
+    success && isSuccessVisible ? { key: 'success', message: success, variant: 'success' as const } : null,
+    error && isErrorVisible ? { key: 'error', message: error, variant: 'error' as const } : null,
   ].filter((item): item is { key: string; message: string; variant: 'success' | 'error' } => Boolean(item));
 
   if (!alerts.length) {
@@ -442,7 +489,7 @@ const LoginPage = ({ onAuthenticated }: { onAuthenticated: (session: Session) =>
             </button>
           </div>
         </label>
-        <FloatingAlerts error={error} />
+        <FloatingAlerts error={error} onClearError={() => setError('')} />
         <button
           type="submit"
           disabled={loading}
