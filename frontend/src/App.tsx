@@ -63,7 +63,7 @@ const getBorrowQuantityLimit = (availableQuantity: number) => Math.max(1, Math.m
 const isValidPhone = (value: string) => /^\d{10}$/.test(value.trim());
 
 const defaultCategoryValues = ['Audio', 'Computing', 'Media', 'Presentation'];
-const defaultCategoryItems: CategoryItem[] = defaultCategoryValues.map((name, index) => ({ id: index + 1, name }));
+const defaultCategoryItems: CategoryItem[] = defaultCategoryValues.map((name: string, index: number) => ({ id: index + 1, name }));
 
 const categoryLabels: Record<string, string> = {
   All: 'ทั้งหมด',
@@ -153,7 +153,7 @@ const buildBorrowRequestOrderLookup = (records: BorrowRecord[]) => {
     return aTime - bTime;
   });
 
-  return ordered.reduce<Record<number, number>>((accumulator, record, index) => {
+  return ordered.reduce<Record<number, number>>((accumulator: Record<number, number>, record: BorrowRecord, index: number) => {
     accumulator[record.id] = index + 1;
     return accumulator;
   }, {});
@@ -438,7 +438,7 @@ const LoginPage = ({ onAuthenticated }: { onAuthenticated: (session: Session) =>
       onAuthenticated(response.data);
       navigate(getRoleHomePath(response.data.user.role));
     } catch (requestError) {
-      setError(getErrorMessage(requestError, 'ไม่สามารถเข้าสู่ระบบได้'));
+      setError(getErrorMessage(requestError as unknown, 'ไม่สามารถเข้าสู่ระบบได้'));
     } finally {
       setLoading(false);
     }
@@ -570,7 +570,7 @@ const RegisterPage = () => {
         navigate('/login?role=user');
       }, 1200);
     } catch (requestError) {
-      setError(getErrorMessage(requestError, 'ไม่สามารถสมัครสมาชิกได้'));
+      setError(getErrorMessage(requestError as unknown, 'ไม่สามารถสมัครสมาชิกได้'));
     } finally {
       setLoading(false);
     }
@@ -688,7 +688,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
   const fetchCategories = async () => {
     try {
       const response = await api.get<CategoryItem[]>('/categories');
-      const names = response.data.map((item) => item.name);
+      const names = response.data.map((item: CategoryItem) => item.name);
       setCategories(names.length ? names : defaultCategoryValues);
     } catch {
       setCategories(defaultCategoryValues);
@@ -1349,8 +1349,8 @@ const UserDashboardPage = ({ session, onLogout }: { session: Session; onLogout: 
   const loadDashboard = () => {
     api
       .get<UserDashboardResponse>('/dashboard/user')
-      .then((response) => setData(response.data))
-      .catch((requestError) => setError(getErrorMessage(requestError, 'ไม่สามารถโหลดแดชบอร์ดได้')));
+      .then((response: { data: UserDashboardResponse }) => setData(response.data))
+      .catch((requestError: unknown) => setError(getErrorMessage(requestError, 'ไม่สามารถโหลดแดชบอร์ดได้')));
   };
 
   useEffect(() => {
@@ -1507,8 +1507,8 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
   useEffect(() => {
     api
       .get<AdminDashboardResponse>('/dashboard/admin')
-      .then((response) => setData(response.data))
-      .catch((requestError) => setError(getErrorMessage(requestError, 'ไม่สามารถโหลดแดชบอร์ดผู้ดูแลได้')));
+      .then((response: any) => setData(response.data))
+      .catch((requestError: unknown) => setError(getErrorMessage(requestError, 'ไม่สามารถโหลดแดชบอร์ดผู้ดูแลได้')));
   }, []);
 
   return (
@@ -1840,7 +1840,8 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
     try {
       const response = await api.get<CategoryItem[]>('/categories');
       const items = response.data;
-      const names = items.map((item) => item.name);
+      const names = items.map((item: CategoryItem) => item.name);
+
 
       if (names.length) {
         setCategories(items);
@@ -2349,7 +2350,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
 
       setRecords(borrowResponse.data);
       setEquipmentInventory(
-        equipmentResponse.data.reduce<Record<number, EquipmentItem>>((accumulator, item) => {
+        equipmentResponse.data.reduce<Record<number, EquipmentItem>>((accumulator: Record<number, EquipmentItem>, item: EquipmentItem) => {
           accumulator[item.id] = item;
           return accumulator;
         }, {})
