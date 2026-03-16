@@ -1780,6 +1780,8 @@ const ManageUsersPage = ({ session, onLogout }: { session: Session; onLogout: ()
 };
 
 const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [pendingSubmitEvent, setPendingSubmitEvent] = useState<FormEvent<HTMLFormElement> | null>(null);
   const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>(defaultCategoryItems);
   const [error, setError] = useState('');
@@ -1834,9 +1836,15 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setPendingSubmitEvent(event);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmAdd = async () => {
     setError('');
     setMessage('');
-
+    setShowConfirmModal(false);
+    if (!pendingSubmitEvent) return;
     try {
       await api.post('/equipment', {
         ...form,
@@ -1859,6 +1867,12 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถเพิ่มอุปกรณ์ได้'));
     }
+    setPendingSubmitEvent(null);
+  };
+
+  const handleCancelAdd = () => {
+    setShowConfirmModal(false);
+    setPendingSubmitEvent(null);
   };
 
   const openEdit = (item: EquipmentItem) => {
@@ -1913,6 +1927,18 @@ const ManageEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
 
   return (
     <AppLayout user={session.user} title="จัดการอุปกรณ์" onLogout={onLogout}>
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="rounded-2xl bg-white p-6 shadow-xl w-full max-w-md">
+            <h4 className="text-lg font-semibold mb-4">ยืนยันการเพิ่มอุปกรณ์</h4>
+            <p className="mb-6 text-stone-700">คุณต้องการเพิ่มอุปกรณ์นี้ใช่หรือไม่?</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={handleCancelAdd} className="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 font-medium">ยกเลิก</button>
+              <button onClick={handleConfirmAdd} className="px-4 py-2 rounded-xl bg-cardinal text-white font-semibold">ยืนยัน</button>
+            </div>
+          </div>
+        </div>
+      )}
       <FloatingAlerts error={error} success={message} />
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="glass-panel p-6">
