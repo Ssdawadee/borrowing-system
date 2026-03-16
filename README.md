@@ -18,6 +18,10 @@ database
 SRS
 ```
 
+## Figma Prototype
+
+[Borrowing System UI Design (Figma)](https://www.figma.com/design/d4FDjq7YZdyXxx2e21fG81/borrowing-system?node-id=0-1&p=f&t=uwtiGc8sk1zhqP5I-0)
+
 ## ความสามารถของระบบ
 
 - สมัครสมาชิกและเข้าสู่ระบบด้วย JWT
