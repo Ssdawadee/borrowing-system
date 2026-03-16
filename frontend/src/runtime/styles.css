@@ -104,13 +104,13 @@ select:focus {
 .campus-hero {
   background-image:
     linear-gradient(135deg, rgba(47, 8, 15, 0.82), rgba(143, 29, 40, 0.62)),
-    url('/campus-building.svg');
+    url('/BG.png');
   background-size: cover;
   background-position: center;
 }
 
 .campus-overlay {
-  background-image: url('/campus-building.svg');
+  background-image: url('/BG.png');
   background-size: cover;
   background-position: center;
 }

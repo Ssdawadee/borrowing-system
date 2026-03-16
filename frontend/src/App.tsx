@@ -358,12 +358,12 @@ const AuthShell = ({ children }: { children: ReactNode }) => (
     <div className="glass-panel w-full max-w-6xl overflow-hidden">
       <div className="grid min-h-[720px] lg:grid-cols-[1.15fr_0.85fr]">
         <section className="hidden bg-gradient-to-br from-cardinal via-brick to-ink p-10 text-white lg:block">
-          <p className="text-xs uppercase tracking-[0.45em] text-white/70">ชมรมมหาวิทยาลัย</p>
+          <p className="text-xs uppercase tracking-[0.45em] text-white/70">สโมสรนิสิตคณะวิศวกรรมศาสตร์</p>
           <h1 className="mt-6 max-w-md text-5xl font-semibold leading-tight">
-            ยืมอุปกรณ์ของชมรมได้ง่ายขึ้น ด้วยขั้นตอนที่ชัดเจน
+            ระบบยืมอุปกรณ์ของสโมสรนิสิตคณะวิศวกรรมศาสตร์
           </h1>
           <p className="mt-6 max-w-lg text-base text-white/80">
-            อินเทอร์เฟซธีมมหาวิทยาลัย โทนสีแดง ใช้งานง่าย ทั้งสำหรับผู้ยืมและผู้ดูแลในที่เดียว
+            © 2026 สโมสรนิสิตคณะวิศวกรรมศาสตร์ | ระบบยืมอุปกรณ์
           </p>
         </section>
         <section className="flex items-center justify-center bg-white/75 p-6 sm:p-10">{children}</section>

@@ -43,7 +43,7 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
         <aside className="relative overflow-hidden bg-gradient-to-b from-cardinal via-brick to-ink px-6 py-8 text-white">
           <div className="absolute inset-0 opacity-10 campus-overlay" />
           <div className="relative">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/70">ชมรมมหาวิทยาลัย</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-white/70">สโมสรนิสิตคณะวิศวกรรมศาสตร์</p>
             <h1 className="mt-3 text-3xl font-semibold leading-tight">ระบบยืมอุปกรณ์</h1>
             <p className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 text-sm text-white/85">
               {user.name}
@@ -80,7 +80,7 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
         <main className="px-4 py-6 sm:px-6 lg:px-10">
           <header className="mb-8 flex flex-col gap-3 rounded-[28px] border border-white/70 bg-white/80 px-6 py-5 shadow-panel backdrop-blur md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-stone-500">ระบบจัดการชมรมมหาวิทยาลัย</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-stone-500">ระบบยืมอุปกรณ์ของสโมสรนิสิตคณะวิศวกรรมศาสตร์</p>
               <h2 className="mt-2 text-3xl font-semibold text-ink">{title}</h2>
             </div>
             <div className="text-sm text-stone-500">
