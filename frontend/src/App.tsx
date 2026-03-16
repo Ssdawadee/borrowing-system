@@ -1440,20 +1440,47 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
   const [error, setError] = useState('');
   const [requestSearchKeyword, setRequestSearchKeyword] = useState('');
 
-  const filteredPendingRequests = useMemo(() => {
-    const source = data?.pendingRequests || [];
+  // Map pendingRequests to BorrowRecord[] with default values for missing fields
+  // Always work with BorrowRecord[]
+  const allPendingRecords: BorrowRecord[] = useMemo(() =>
+    (data?.pendingRequests || []).map((item) => ({
+      id: item.id,
+      user_id: 0,
+      equipment_id: 0,
+      quantity: undefined,
+      borrow_date: item.borrow_date,
+      due_date: item.due_date,
+      return_date: undefined,
+      approved_at: undefined,
+      rejected_at: undefined,
+      return_confirmed_at: undefined,
+      admin_action_at: undefined,
+      borrow_reason: item.borrow_reason,
+      status: item.status,
+      equipment_name: item.equipment_name,
+      category: undefined,
+      equipment_available_quantity: undefined,
+      equipment_total_quantity: undefined,
+      image_url: undefined,
+      user_name: item.user_name,
+      student_id: item.student_id,
+      email: undefined,
+      due_soon: undefined,
+    })),
+    [data?.pendingRequests]
+  );
+
+  const filteredPendingRequests: BorrowRecord[] = useMemo(() => {
     const keyword = requestSearchKeyword.trim().toLowerCase();
-
     if (!keyword) {
-      return source;
+      return allPendingRecords;
     }
-
-    return source.filter((item) =>
-      item.user_name.toLowerCase().includes(keyword) ||
+    return allPendingRecords.filter((item) =>
+      (item.user_name?.toLowerCase() || '').includes(keyword) ||
       (item.student_id || '').toLowerCase().includes(keyword) ||
-      item.equipment_name.toLowerCase().includes(keyword)
+      (item.equipment_name?.toLowerCase() || '').includes(keyword)
     );
-  }, [data?.pendingRequests, requestSearchKeyword]);
+  }, [allPendingRecords, requestSearchKeyword]);
 
   const sortedPendingRequests = useMemo(() => {
     const items = [...filteredPendingRequests];
@@ -1526,7 +1553,7 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
                 </tr>
               </thead>
               <tbody>
-                {sortedPendingRequests.map((request: AdminDashboardResponse['pendingRequests'][number]) => (
+                {sortedPendingRequests.map((request: BorrowRecord) => (
                   <tr key={request.id}>
                     <td>{requestOrderLookup[request.id] ?? '-'}</td>
                     <td>
@@ -1534,11 +1561,11 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
                       <div className="text-xs text-stone-500">{request.student_id}</div>
                     </td>
                     <td>{request.equipment_name}</td>
-                    <td>{request.quantity ?? 1}</td>
+                    <td>{request.quantity !== undefined ? request.quantity : '-'}</td>
                     <td>{formatTimeHM(request.borrow_date)}</td>
                     <td>{formatDateDMY(request.borrow_date)}</td>
                     <td>{formatDateDMY(request.due_date)}</td>
-                    <td>{formatTimeHM(request.return_date)}</td>
+                    <td>{request.return_date ? formatTimeHM(request.return_date) : '-'}</td>
                     <td>
                       <p className="max-w-[360px] text-sm text-stone-700">{request.borrow_reason || '-'}</p>
                     </td>
