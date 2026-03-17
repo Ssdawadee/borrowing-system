@@ -1,3 +1,7 @@
+// Normalize category name: trim and lowercase
+function normalizeCategory(name: string): string {
+	return name.trim().toLowerCase();
+}
 import bcrypt from 'bcryptjs';
 import express from 'express';
 import jwt, { type SignOptions } from 'jsonwebtoken';
@@ -47,10 +51,10 @@ router.post('/categories', authMiddleware, roleMiddleware(['admin']), async (req
 			return res.status(400).json({ message: 'Category name is required.' });
 		}
 
-		const categoryName = name.trim();
+		const categoryName = normalizeCategory(name);
 		const db = getDatabase();
 		const existingCategory = await db.get<{ id: number }>(
-			'SELECT id FROM categories WHERE LOWER(name) = LOWER(?)',
+			'SELECT id FROM categories WHERE name = ?',
 			categoryName
 		);
 
@@ -200,13 +204,13 @@ router.post('/auth/login', async (req, res, next) => {
 		);
 
 		if (!user) {
-			return res.status(401).json({ message: 'รหัสนักศึกษา อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
+			return res.status(401).json({ message: 'ไม่พบบัญชีผู้ใช้' });
 		}
 
 		const passwordMatches = await bcrypt.compare(password, user.password);
 
 		if (!passwordMatches) {
-			return res.status(401).json({ message: 'รหัสนักศึกษา อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
+			return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
 		}
 
 		if (!user.is_active) {
@@ -305,7 +309,7 @@ router.post('/equipment', authMiddleware, roleMiddleware(['admin']), async (req,
 			status || 'NORMAL'
 		);
 
-		await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', category.trim());
+		await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', normalizeCategory(category));
 
 		const equipment = await db.get('SELECT * FROM equipment WHERE id = ?', result.lastID);
 		return res.status(201).json(equipment);
@@ -364,7 +368,7 @@ router.put('/equipment/:id', authMiddleware, roleMiddleware(['admin']), async (r
 			req.params.id
 		);
 
-		await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', String(payload.category).trim());
+		await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', normalizeCategory(payload.category));
 
 		const equipment = await db.get('SELECT * FROM equipment WHERE id = ?', req.params.id);
 		return res.json(equipment);
