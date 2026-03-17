@@ -762,8 +762,8 @@ const RegisterPage = () => {
 const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
   const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('All');
-  const [categories, setCategories] = useState<string[]>(defaultCategoryValues);
+  const [category, setCategory] = useState('all');
+  const [categories, setCategories] = useState<string[]>(defaultCategoryValues.map(normalizeCategory));
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [alertKey, setAlertKey] = useState(0);
@@ -784,7 +784,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
       const response = await api.get<EquipmentItem[]>('/equipment', {
         params: {
           search: search || undefined,
-          category: category === 'All' ? undefined : category,
+          category: category === 'all' ? undefined : category,
         },
       });
       setEquipment(response.data);
@@ -796,14 +796,13 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
   const fetchCategories = async () => {
     try {
       const response = await api.get<CategoryItem[]>('/categories');
-      // กรองชื่อหมวดหมู่ไม่ให้ซ้ำ และเรียงตามชื่อ
       // Normalize, remove duplicates, and sort
       const normalizedNames = Array.from(
         new Set(response.data.map((item: CategoryItem) => normalizeCategory(item.name)))
       ).sort((a, b) => a.localeCompare(b, 'th'));
-      setCategories(normalizedNames.length ? normalizedNames : defaultCategoryValues);
+      setCategories(normalizedNames.length ? normalizedNames : defaultCategoryValues.map(normalizeCategory));
     } catch {
-      setCategories(defaultCategoryValues);
+      setCategories(defaultCategoryValues.map(normalizeCategory));
     }
   };
 
@@ -982,10 +981,10 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
               onChange={(event) => setCategory(event.target.value)}
               className="rounded-2xl border border-stone-200 bg-white px-4 py-3 outline-none focus:border-cardinal"
             >
-              <option value="All">{getCategoryLabel('All')}</option>
+              <option value="all">{getCategoryLabel('All')}</option>
               {categories.map((categoryName) => (
                 <option key={categoryName} value={categoryName}>
-                  {getCategoryLabel(categoryName)}
+                  {getCategoryLabel(categoryName.charAt(0).toUpperCase() + categoryName.slice(1))}
                 </option>
               ))}
             </select>
