@@ -1,6 +1,20 @@
-import type { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppUser } from '../types';
+import {
+  Home,
+  Box,
+  Receipt,
+  Undo2,
+  CheckCircle,
+  Inbox,
+  FolderTree,
+  Wrench,
+  Users,
+  GraduationCap,
+  Shield,
+  History,
+} from 'lucide-react';
 
 const roleLabels = {
   user: 'นักศึกษา',
@@ -16,19 +30,19 @@ interface AppLayoutProps {
 
 const navByRole = {
   user: [
-    { label: 'แดชบอร์ด', to: '/user/dashboard', icon: '🏠' },
-    { label: 'รายการอุปกรณ์', to: '/equipment', icon: '📦' },
-    { label: 'ประวัติการยืม', to: '/history', icon: '🧾' },
-    { label: 'คืนอุปกรณ์', to: '/returns', icon: '↩️' },
+    { label: 'แดชบอร์ด', to: '/user/dashboard', icon: Home as React.ComponentType<{ className?: string }> },
+    { label: 'รายการอุปกรณ์', to: '/equipment', icon: Box as React.ComponentType<{ className?: string }> },
+    { label: 'ประวัติการยืม', to: '/history', icon: History as React.ComponentType<{ className?: string }> },
+    { label: 'คืนอุปกรณ์', to: '/returns', icon: Undo2 as React.ComponentType<{ className?: string }> },
   ],
   admin: [
-    { label: 'แดชบอร์ด', to: '/admin/dashboard', icon: '🏠' },
-    { label: 'อนุมัติคำขอ', to: '/admin/requests', icon: '✅' },
-    { label: 'ยืนยันการคืน', to: '/admin/returns', icon: '📥' },
-    { label: 'ประวัติทั้งหมด', to: '/admin/history', icon: '🧾' },
-    { label: 'จัดการหมวดหมู่', to: '/admin/categories', icon: '🗂️' },
-    { label: 'จัดการอุปกรณ์', to: '/admin/equipment', icon: '🛠️' },
-    { label: 'จัดการผู้ใช้', to: '/admin/users', icon: '👥' },
+    { label: 'แดชบอร์ด', to: '/admin/dashboard', icon: Home as React.ComponentType<{ className?: string }> },
+    { label: 'อนุมัติคำขอ', to: '/admin/requests', icon: CheckCircle as React.ComponentType<{ className?: string }> },
+    { label: 'ยืนยันการคืน', to: '/admin/returns', icon: Inbox as React.ComponentType<{ className?: string }> },
+    { label: 'ประวัติทั้งหมด', to: '/admin/history', icon: History as React.ComponentType<{ className?: string }> },
+    { label: 'จัดการหมวดหมู่', to: '/admin/categories', icon: FolderTree as React.ComponentType<{ className?: string }> },
+    { label: 'จัดการอุปกรณ์', to: '/admin/equipment', icon: Wrench as React.ComponentType<{ className?: string }> },
+    { label: 'จัดการผู้ใช้', to: '/admin/users', icon: Users as React.ComponentType<{ className?: string }> },
   ],
 } as const;
 
@@ -53,6 +67,7 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
             <nav className="mt-8 space-y-2">
               {navItems.map((item) => {
                 const active = location.pathname === item.to;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.to}
@@ -61,7 +76,7 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
                       active ? 'bg-white text-cardinal shadow-panel' : 'bg-white/10 text-white hover:bg-white/20'
                     }`}
                   >
-                    <span aria-hidden="true" className="text-base leading-none">{item.icon}</span>
+                    {Icon ? <Icon className="w-5 h-5" /> : null}
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -72,7 +87,7 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
               onClick={onLogout}
               className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-transparent px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
             >
-              <span aria-hidden="true">↩</span>
+              <Undo2 className="w-5 h-5" />
               ออกจากระบบ
             </button>
           </div>
@@ -84,7 +99,12 @@ const AppLayout = ({ user, title, onLogout, children }: AppLayoutProps) => {
               <h2 className="mt-2 text-3xl font-semibold text-ink">{title}</h2>
             </div>
             <div className="text-sm text-stone-500">
-              บทบาท: <span className="font-semibold text-cardinal">{user.role === 'admin' ? '🛡️ ' : '🎓 '}{roleLabels[user.role]}</span>
+              บทบาท: <span className="font-semibold text-cardinal">
+                {user.role === 'admin'
+                  ? <Shield className="w-5 h-5 inline align-middle mr-1" />
+                  : <GraduationCap className="w-5 h-5 inline align-middle mr-1" />}
+                {roleLabels[user.role]}
+              </span>
             </div>
           </header>
           {children}

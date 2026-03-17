@@ -1,4 +1,51 @@
-import {
+import { ChevronDown, ChevronUp, ClipboardList, Bell, Info, Box as BoxIcon, History } from 'lucide-react';
+// การ์ดกติกาการยืม (ภาษาไทย) - 3 คอลัมน์ ไม่มีปุ่มอ่านเพิ่มเติม
+const BorrowingRulesCard: React.FC = () => {
+  return (
+    <div className="w-full my-6">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 transition-all w-full">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* ซ้าย: การยืมอุปกรณ์ */}
+          <div className="flex-1 flex flex-col gap-2 min-w-[180px]">
+            <div className="flex items-center gap-2 font-semibold text-lg">
+              <Info className="w-5 h-5 text-blue-500" />
+              การยืมอุปกรณ์
+            </div>
+            <ul className="ml-1 mt-1 text-sm text-gray-700 space-y-1">
+              <li>ยืมได้สูงสุด 5 วัน</li>
+              <li>สูงสุด 3 ชิ้น/ชนิดต่อครั้ง</li>
+              <li>จองล่วงหน้าได้ 7 วัน</li>
+            </ul>
+          </div>
+          {/* กลาง: การแจ้งเตือน */}
+          <div className="flex-1 flex flex-col gap-2 min-w-[180px]">
+            <div className="flex items-center gap-2 font-semibold text-lg">
+              <Bell className="w-5 h-5 text-yellow-500" />
+              การแจ้งเตือน
+            </div>
+            <ul className="ml-1 mt-1 text-sm text-gray-700 space-y-1">
+              <li>แจ้งเตือนก่อนครบกำหนด 1 วัน</li>
+              <li>แจ้งเตือนวันครบกำหนด</li>
+              <li>แจ้งเตือนเมื่อเกินกำหนด</li>
+            </ul>
+          </div>
+          {/* ขวา: เงื่อนไขเพิ่มเติม */}
+          <div className="flex-1 flex flex-col gap-2 min-w-[180px]">
+            <div className="flex items-center gap-2 font-semibold text-lg">
+              <ClipboardList className="w-5 h-5 text-green-600" />
+              เงื่อนไขเพิ่มเติม
+            </div>
+            <ul className="ml-1 mt-1 text-sm text-gray-700 space-y-1">
+              <li>ต้องยืนยันการคืนในระบบทุกครั้ง</li>
+              <li>ระบบจะระบุสถานะ <span className="font-semibold text-red-600">"เกินกำหนดคืน"</span> ให้อัตโนมัติเมื่อเลยกำหนด</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+import React, {
   FormEvent,
   type ReactNode,
   useEffect,
@@ -14,6 +61,23 @@ import {
 } from 'react-router-dom';
 import AppLayout from './runtime/components/AppLayout';
 import StatCard from './runtime/components/StatCard';
+import {
+  Users,
+  BarChart,
+  Clock,
+  AlertTriangle,
+  BookOpen,
+  CheckCircle,
+  Undo2,
+  Receipt,
+  CircleDot,
+  Search,
+  XCircle,
+  Inbox,
+  PackageCheck,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { clearSession, getRoleHomePath, getStoredSession, saveSession } from './runtime/lib/auth';
 import { api, getErrorMessage } from './runtime/lib/api';
 import {
@@ -220,32 +284,27 @@ const toApiDateString = (date: Date) => {
 
 const getStatusLabel = (status: string) => statusLabels[status as keyof typeof statusLabels] || status;
 
-const getStatusIcon = (status: string) => {
+import type { FC } from 'react';
+const getStatusIcon = (status: string): ReturnType<FC<{ className?: string }>> => {
   if (status === 'PENDING') {
-    return '⏳';
+    return <Clock className="w-4 h-4 inline align-middle mr-1" />;
   }
-
   if (status === 'APPROVED') {
-    return '✅';
+    return <CheckCircle className="w-4 h-4 inline align-middle mr-1" />;
   }
-
   if (status === 'REJECTED') {
-    return '❌';
+    return <XCircle className="w-4 h-4 inline align-middle mr-1" />;
   }
-
   if (status === 'RETURN_PENDING') {
-    return '📩';
+    return <Inbox className="w-4 h-4 inline align-middle mr-1" />;
   }
-
   if (status === 'RETURNED') {
-    return '📦';
+    return <PackageCheck className="w-4 h-4 inline align-middle mr-1" />;
   }
-
   if (status === 'DAMAGED') {
-    return '⚠️';
+    return <AlertTriangle className="w-4 h-4 inline align-middle mr-1" />;
   }
-
-  return '•';
+  return <CircleDot className="w-3 h-3 inline align-middle mr-1" />;
 };
 
 const getStatusBadgeClass = (status: string) => {
@@ -334,21 +393,31 @@ const FloatingAlerts = ({
     return null;
   }
 
+  // Icon mapping
+  const iconMap = {
+    success: <CheckCircle className="w-5 h-5 mt-0.5 text-emerald-500 flex-shrink-0" />,
+    error: <AlertTriangle className="w-5 h-5 mt-0.5 text-rose-500 flex-shrink-0" />,
+  };
+
   return (
-    <div className="pointer-events-none fixed left-1/2 top-24 z-40 flex w-[min(90vw,42rem)] -translate-x-1/2 flex-col gap-3">
-      {alerts.map((alert) => (
-        <div
-          key={alert.key}
-          role="alert"
-          className={`floating-alert rounded-2xl px-4 py-3 text-sm shadow-panel ${
-            alert.variant === 'success'
-              ? 'floating-alert--success bg-emerald-50 text-emerald-700'
-              : 'bg-rose-50 text-rose-700'
-          }`}
-        >
-          {alert.message}
-        </div>
-      ))}
+    <div className="pointer-events-none fixed left-1/2 top-6 z-40 flex -translate-x-1/2 w-auto justify-center">
+      <div className="flex flex-col items-center gap-2">
+        {alerts.map((alert) => (
+          <div
+            key={alert.key}
+            role="alert"
+            className={`rounded-xl border shadow-panel flex items-start gap-2 px-4 py-2 max-w-md w-auto text-sm ${
+              alert.variant === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-rose-200 bg-rose-50 text-rose-700'
+            }`}
+            style={{ lineHeight: '1.5' }}
+          >
+            {iconMap[alert.variant]}
+            <span className="flex-1 text-left">{alert.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -482,10 +551,12 @@ const LoginPage = ({ onAuthenticated }: { onAuthenticated: (session: Session) =>
             <button
               type="button"
               onClick={() => setShowPassword((current) => !current)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-stone-500"
+              className="absolute right-3 top-0 h-full flex items-center text-lg text-stone-500"
               aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
             >
-              {showPassword ? '🙈' : '👁️'}
+              {showPassword
+                ? <EyeOff className="w-5 h-5" />
+                : <Eye className="w-5 h-5" />}
             </button>
           </div>
         </label>
@@ -529,7 +600,17 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorKey, setErrorKey] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
+  // Auto-dismiss error like LoginPage
+  useEffect(() => {
+    if (!error) return;
+    const timeoutId = window.setTimeout(() => {
+      setError('');
+      setErrorKey((k) => k + 1);
+    }, 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [error]);
 
   const updateField = (field: keyof AuthFormState, value: string) => {
     setForm((current: AuthFormState) => ({ ...current, [field]: value }));
@@ -541,17 +622,29 @@ const RegisterPage = () => {
     setSuccessMessage('');
 
     if (!isValidStudentId(form.student_id)) {
-      setError('กรุณากรอกรหัสนักศึกษาให้ขึ้นต้นด้วย b และตามด้วยตัวเลข 10 หลัก');
+      setError('');
+      setTimeout(() => {
+        setError('กรุณากรอกรหัสนักศึกษาให้ขึ้นต้นด้วย b และตามด้วยตัวเลข 10 หลัก');
+        setErrorKey((k) => k + 1);
+      }, 10);
       return;
     }
 
     if (!isValidPhone(form.phone)) {
-      setError('กรุณากรอกเบอร์โทรเป็นตัวเลข 10 หลัก');
+      setError('');
+      setTimeout(() => {
+        setError('กรุณากรอกเบอร์โทรเป็นตัวเลข 10 หลัก');
+        setErrorKey((k) => k + 1);
+      }, 10);
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+      setError('');
+      setTimeout(() => {
+        setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+        setErrorKey((k) => k + 1);
+      }, 10);
       return;
     }
 
@@ -615,14 +708,16 @@ const RegisterPage = () => {
 
                     setShowConfirmPassword((current) => !current);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-stone-500"
+                  className="absolute right-3 top-0 h-full flex items-center text-lg text-stone-500"
                   aria-label={
                     field === 'password'
                       ? (showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน')
                       : (showConfirmPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน')
                   }
                 >
-                  {(field === 'password' ? showPassword : showConfirmPassword) ? '🙈' : '👁️'}
+                  {(field === 'password' ? showPassword : showConfirmPassword)
+                    ? <EyeOff className="w-5 h-5" />
+                    : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             ) : (
@@ -640,7 +735,7 @@ const RegisterPage = () => {
             )}
           </label>
         ))}
-        <FloatingAlerts error={error} success={successMessage} />
+        <FloatingAlerts key={errorKey} error={error} success={successMessage} />
         <button
           type="submit"
           disabled={loading}
@@ -667,6 +762,15 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
   const [categories, setCategories] = useState<string[]>(defaultCategoryValues);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [alertKey, setAlertKey] = useState(0);
+    useEffect(() => {
+      if (!error && !message) return;
+      const timeoutId = window.setTimeout(() => {
+        setError('');
+        setMessage('');
+      }, 3000);
+      return () => window.clearTimeout(timeoutId);
+    }, [error, message]);
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
   const [borrowForm, setBorrowForm] = useState<BorrowRequestFormState>(initialBorrowForm);
   const [submissionState, setSubmissionState] = useState<'idle' | 'submitting' | 'success'>('idle');
@@ -726,21 +830,25 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
 
     if (!Number.isInteger(borrowForm.quantity) || borrowForm.quantity < 1) {
       setError('กรุณาระบุจำนวนที่ต้องการยืมอย่างน้อย 1 ชิ้น');
+      setAlertKey((k) => k + 1);
       return;
     }
 
     if (borrowForm.quantity > 3) {
       setError('1 บัญชีสามารถยืมอุปกรณ์ชนิดเดียวกันได้สูงสุด 3 ชิ้นต่อคำขอ');
+      setAlertKey((k) => k + 1);
       return;
     }
 
     if (borrowForm.quantity > selectedEquipment.available_quantity) {
       setError('จำนวนที่ต้องการยืมมากกว่าจำนวนคงเหลือของอุปกรณ์');
+      setAlertKey((k) => k + 1);
       return;
     }
 
     if (!borrowForm.borrowDate || !borrowForm.dueDate || !borrowForm.reason.trim()) {
       setError('กรุณากรอกวันที่ยืม วันที่คืน และเหตุผลในการยืมให้ครบถ้วน');
+      setAlertKey((k) => k + 1);
       return;
     }
 
@@ -749,11 +857,13 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
 
     if (!parsedBorrowDate || !parsedDueDate) {
       setError('กรุณากรอกวันที่เป็นรูปแบบ วัน/เดือน/ปี เช่น 11/03/2569');
+      setAlertKey((k) => k + 1);
       return;
     }
 
     if (parsedDueDate <= parsedBorrowDate) {
       setError('วันที่คืนต้องมากกว่าวันที่ยืม');
+      setAlertKey((k) => k + 1);
       return;
     }
 
@@ -761,6 +871,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
     todayMidnight.setHours(0, 0, 0, 0);
     if (parsedBorrowDate < todayMidnight) {
       setError('วันที่ยืมต้องไม่เป็นวันที่ผ่านมาแล้ว');
+      setAlertKey((k) => k + 1);
       return;
     }
 
@@ -768,12 +879,14 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
     maxAdvanceDate.setDate(maxAdvanceDate.getDate() + 7);
     if (parsedBorrowDate > maxAdvanceDate) {
       setError('จองอุปกรณ์ล่วงหน้าได้ไม่เกิน 7 วัน');
+      setAlertKey((k) => k + 1);
       return;
     }
 
     const diffDays = (parsedDueDate.getTime() - parsedBorrowDate.getTime()) / (1000 * 60 * 60 * 24);
     if (diffDays > 5) {
       setError('ระยะเวลายืมต้องไม่เกิน 5 วัน');
+      setAlertKey((k) => k + 1);
       return;
     }
 
@@ -797,6 +910,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
     } catch (requestError) {
       setSubmissionState('idle');
       setError(getErrorMessage(requestError, 'ไม่สามารถส่งคำขอยืมได้'));
+      setAlertKey((k) => k + 1);
     }
   };
 
@@ -869,7 +983,7 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
             </select>
           </div>
         </div>
-        <FloatingAlerts error={error} success={message} />
+        <FloatingAlerts key={alertKey} error={error} success={message} />
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {equipment.map((item: EquipmentItem) => (
             <article key={item.id} className="glass-panel overflow-hidden p-0">
@@ -1372,63 +1486,65 @@ const UserDashboardPage = ({ session, onLogout }: { session: Session; onLogout: 
   return (
     <AppLayout user={session.user} title="แดชบอร์ดนักศึกษา" onLogout={onLogout}>
       <div className="space-y-6">
+        {/* กติกาการยืม (ภาษาไทย) */}
+        <BorrowingRulesCard />
         <FloatingAlerts error={error} />
         <div className="grid gap-5 md:grid-cols-3">
-          <StatCard label="กำลังยืมอยู่" value={data?.stats.borrowedCount || 0} icon="📘" />
-          <StatCard label="คำขอรออนุมัติ" value={data?.stats.pendingCount || 0} accent="from-amber-400 to-orange-500" icon="⏳" />
-          <StatCard label="อุปกรณ์พร้อมยืม" value={data?.stats.availableEquipment || 0} accent="from-emerald-500 to-teal-600" icon="🟢" />
+          <StatCard label="กำลังยืมอยู่" value={data?.stats.borrowedCount || 0} icon={BookOpen} />
+          <StatCard label="ประวัติการยืม" value={data?.stats.pendingCount || 0} accent="from-amber-400 to-orange-500" icon={History} />
+          <StatCard label="อุปกรณ์พร้อมยืม" value={data?.stats.availableEquipment || 0} accent="from-emerald-500 to-teal-600" icon={BoxIcon} />
         </div>
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="glass-panel p-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-ink">กิจกรรมการยืมล่าสุด</h3>
-              <button
-                type="button"
-                onClick={() => window.location.assign('/history')}
-                className="text-sm font-semibold text-cardinal"
-              >
-                ดูทั้งหมด
-              </button>
-            </div>
-            <div className="mt-5 space-y-4">
-              {data?.recentBorrows.map((record: UserDashboardResponse['recentBorrows'][number]) => (
-                <div key={record.id} className="rounded-2xl border border-stone-100 bg-stone-50 px-4 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-ink">{record.equipment_name}</p>
-                      <p className="text-sm text-stone-500">ยืมเมื่อ {formatDateDMY(record.borrow_date)}</p>
+            <section className="glass-panel p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-ink">กิจกรรมการยืมล่าสุด</h3>
+                <button
+                  type="button"
+                  onClick={() => window.location.assign('/history')}
+                  className="text-sm font-semibold text-cardinal"
+                >
+                  ดูทั้งหมด
+                </button>
+              </div>
+              <div className="mt-5 space-y-4">
+                {data?.recentBorrows.map((record: UserDashboardResponse['recentBorrows'][number]) => (
+                  <div key={record.id} className="rounded-2xl border border-stone-100 bg-stone-50 px-4 py-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-ink">{record.equipment_name}</p>
+                        <p className="text-sm text-stone-500">ยืมเมื่อ {formatDateDMY(record.borrow_date)}</p>
+                      </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
+                        {getStatusIcon(record.status)} {getStatusLabel(record.status)}
+                      </span>
                     </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
-                      {getStatusIcon(record.status)} {getStatusLabel(record.status)}
-                    </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="glass-panel p-6">
-            <h3 className="text-xl font-semibold text-ink">การแจ้งเตือนการคืน</h3>
-            <div className="mt-5 space-y-4">
-              {data?.reminders.length ? (
-                data.reminders.map((reminder: UserDashboardResponse['reminders'][number]) => (
-                  <div key={reminder.id} className="rounded-2xl bg-amber-50 px-4 py-4 text-sm text-amber-800">
-                    <p className="font-semibold">{reminder.equipment_name}</p>
-                    <p>
-                      {reminder.reminder_type === 'ONE_DAY_BEFORE'
-                        ? `แจ้งเตือน: เหลือ 1 วันก่อนครบกำหนดคืน (${formatDateDMY(reminder.due_date)})`
-                        : reminder.reminder_type === 'DUE_TODAY'
-                          ? `แจ้งเตือน: วันนี้ถึงกำหนดคืน (${formatDateDMY(reminder.due_date)})`
-                          : reminder.reminder_type === 'OVERDUE'
-                            ? `แจ้งเตือน: เกินกำหนดคืนแล้ว (${formatDateDMY(reminder.due_date)})`
-                            : `ครบกำหนดคืนวันที่ ${formatDateDMY(reminder.due_date)}`}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="rounded-2xl bg-stone-50 px-4 py-4 text-sm text-stone-600">ยังไม่มีการแจ้งเตือนการคืนอุปกรณ์</p>
-              )}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+            <section className="glass-panel p-6">
+              <h3 className="text-xl font-semibold text-ink">การแจ้งเตือนการคืน</h3>
+              <div className="mt-5 space-y-4">
+                {data?.reminders.length ? (
+                  data.reminders.map((reminder: UserDashboardResponse['reminders'][number]) => (
+                    <div key={reminder.id} className="rounded-2xl bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                      <p className="font-semibold">{reminder.equipment_name}</p>
+                      <p>
+                        {reminder.reminder_type === 'ONE_DAY_BEFORE'
+                          ? `แจ้งเตือน: เหลือ 1 วันก่อนครบกำหนดคืน (${formatDateDMY(reminder.due_date)})`
+                          : reminder.reminder_type === 'DUE_TODAY'
+                            ? `แจ้งเตือน: วันนี้ถึงกำหนดคืน (${formatDateDMY(reminder.due_date)})`
+                            : reminder.reminder_type === 'OVERDUE'
+                              ? `แจ้งเตือน: เกินกำหนดคืนแล้ว (${formatDateDMY(reminder.due_date)})`
+                              : `ครบกำหนดคืนวันที่ ${formatDateDMY(reminder.due_date)}`}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-2xl bg-stone-50 px-4 py-4 text-sm text-stone-600">ยังไม่มีการแจ้งเตือนการคืนอุปกรณ์</p>
+                )}
+              </div>
+            </section>
         </div>
       </div>
     </AppLayout>
@@ -1516,17 +1632,17 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
       <div className="space-y-6">
         <FloatingAlerts error={error} />
         <div className="grid gap-5 md:grid-cols-5">
-          <StatCard label="ผู้ใช้ทั้งหมด" value={data?.stats.totalUsers || 0} accent="from-indigo-500 to-sky-600" icon="👥" />
-          <StatCard label="รายการอุปกรณ์" value={data?.stats.totalEquipment || 0} icon="📦" />
-          <StatCard label="จำนวนคงเหลือ" value={data?.stats.availableUnits || 0} accent="from-emerald-500 to-teal-600" icon="📊" />
-          <StatCard label="คำขอรออนุมัติ" value={data?.stats.pendingRequests || 0} accent="from-amber-400 to-orange-500" icon="⏳" />
-          <StatCard label="อุปกรณ์ชำรุด" value={data?.stats.damagedItems || 0} accent="from-slate-500 to-slate-700" icon="⚠️" />
+          <StatCard label="ผู้ใช้ทั้งหมด" value={data?.stats.totalUsers || 0} accent="from-indigo-500 to-sky-600" icon={Users} />
+          <StatCard label="รายการอุปกรณ์" value={data?.stats.totalEquipment || 0} icon={BoxIcon} />
+          <StatCard label="จำนวนคงเหลือ" value={data?.stats.availableUnits || 0} accent="from-emerald-500 to-teal-600" icon={BarChart} />
+          <StatCard label="คำขอรออนุมัติ" value={data?.stats.pendingRequests || 0} accent="from-amber-400 to-orange-500" icon={Clock} />
+          <StatCard label="อุปกรณ์ชำรุด" value={data?.stats.damagedItems || 0} accent="from-slate-500 to-slate-700" icon={AlertTriangle} />
         </div>
         <section className="glass-panel p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-xl font-semibold text-ink">คิวคำขอที่ต้องดำเนินการ</h3>
             <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
-              <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
+              <Search aria-hidden="true" className="w-5 h-5 text-stone-500" />
               <input
                 type="text"
                 value={requestSearchKeyword}
@@ -1692,7 +1808,7 @@ const ManageUsersPage = ({ session, onLogout }: { session: Session; onLogout: ()
             </button>
           </div>
           <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
-            <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
+            <Search aria-hidden="true" className="w-5 h-5 text-stone-500" />
             <input
               type="text"
               value={searchKeyword}
@@ -2524,7 +2640,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
             </button>
           </div>
           <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
-            <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
+            <Search aria-hidden="true" className="w-5 h-5 text-stone-500" />
             <input
               type="text"
               value={requestSearchKeyword}
@@ -2778,7 +2894,7 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
             </select>
           </label>
           <label className="flex w-full items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm sm:max-w-md">
-            <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
+            <Search aria-hidden="true" className="w-5 h-5 text-stone-500" />
             <input
               type="text"
               value={requestSearchKeyword}
@@ -2998,12 +3114,13 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
     return items;
   }, [filteredRecords, sortOrder]);
 
+  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
+  const [clearHistoryLoading, setClearHistoryLoading] = useState(false);
   const clearCompletedHistory = async () => {
-    const ok = window.confirm('ยืนยันการล้างประวัติที่เสร็จสิ้นทั้งหมด? การดำเนินการนี้ไม่สามารถย้อนกลับได้');
-    if (!ok) {
-      return;
-    }
-
+    setShowClearHistoryModal(true);
+  };
+  const confirmClearCompletedHistory = async () => {
+    setClearHistoryLoading(true);
     try {
       const response = await api.delete<{ deletedCount: number }>('/borrow/completed');
       setMessage(`ล้างประวัติเรียบร้อยแล้ว ${response.data.deletedCount} รายการ`);
@@ -3014,6 +3131,8 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'ไม่สามารถล้างประวัติได้'));
     }
+    setClearHistoryLoading(false);
+    setShowClearHistoryModal(false);
   };
 
   const handlePageChange = (page: number) => {
@@ -3082,7 +3201,7 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
             </select>
           </label>
           <label className="flex min-w-[260px] flex-1 items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-3 py-2 shadow-sm lg:max-w-md">
-            <span aria-hidden="true" className="text-sm text-stone-500">🔍</span>
+            <Search aria-hidden="true" className="w-5 h-5 text-stone-500" />
             <input
               type="text"
               value={requestSearchKeyword}
@@ -3098,6 +3217,35 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
           >
             ล้างประวัติที่เสร็จแล้ว
           </button>
+          {showClearHistoryModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-sm">
+              <div className="glass-panel w-full max-w-md p-8">
+                <h3 className="text-xl font-semibold text-ink">ยืนยันการล้างประวัติ</h3>
+                <p className="mt-3 text-sm text-stone-600">
+                  คุณต้องการล้างประวัติที่เสร็จสิ้นทั้งหมดใช่หรือไม่?<br />
+                  <span className="text-xs text-rose-700">การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowClearHistoryModal(false)}
+                    className="rounded-full border border-stone-200 bg-white px-5 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                    disabled={clearHistoryLoading}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmClearCompletedHistory}
+                    className="rounded-full bg-rose-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+                    disabled={clearHistoryLoading}
+                  >
+                    {clearHistoryLoading ? 'กำลังล้าง...' : 'ยืนยันล้างประวัติ'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div className="table-shell">
           <table>
