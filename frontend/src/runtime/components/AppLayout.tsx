@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Shield,
   History,
+  ClipboardList,
 } from 'lucide-react';
 
 const roleLabels = {
@@ -32,7 +33,7 @@ const navByRole = {
   user: [
     { label: 'แดชบอร์ด', to: '/user/dashboard', icon: Home as React.ComponentType<{ className?: string }> },
     { label: 'รายการอุปกรณ์', to: '/equipment', icon: Box as React.ComponentType<{ className?: string }> },
-    { label: 'ประวัติการยืม', to: '/history', icon: History as React.ComponentType<{ className?: string }> },
+    { label: 'คำขอยืมของฉัน', to: '/history', icon: ClipboardList as React.ComponentType<{ className?: string }> },
     { label: 'คืนอุปกรณ์', to: '/returns', icon: Undo2 as React.ComponentType<{ className?: string }> },
   ],
   admin: [

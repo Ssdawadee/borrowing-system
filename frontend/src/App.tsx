@@ -1228,8 +1228,8 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
         <div className="glass-panel p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-2xl font-semibold text-ink">ประวัติการยืม</h3>
-              <p className="mt-1 text-sm text-stone-500">คำขอยืมทั้งหมดของคุณและสถานะปัจจุบัน</p>
+              <h3 className="text-2xl font-semibold text-ink">คำขอยืมที่กำลังดำเนินการ</h3>
+              <p className="mt-1 text-sm text-stone-500">คำขอยืมของคุณและสถานะปัจจุบัน</p>
             </div>
             <div className="inline-flex rounded-2xl border border-stone-200 bg-white/90 p-1 shadow-sm">
               <button
@@ -1258,7 +1258,7 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>เวลายืม</th>
+                  <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>เวลาส่งคืน</th>
@@ -1362,7 +1362,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>เวลายืม</th>
+                  <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>เหตุผลในการยืม</th>
@@ -1420,7 +1420,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>เวลายืม</th>
+                  <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>เหตุผลในการยืม</th>
@@ -1667,7 +1667,7 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
                   <th>ผู้ยืม</th>
                   <th>อุปกรณ์</th>
                   <th>จำนวนที่ยืม</th>
-                  <th>เวลายืม</th>
+                  <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>เวลาส่งคืน</th>
@@ -2665,7 +2665,7 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เวลายืม</th>
+                <th>เวลาส่งคำขอ</th>
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>เวลาส่งคืน</th>
@@ -2919,7 +2919,7 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เวลายืม</th>
+                <th>เวลาส่งคำขอ</th>
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>เวลาส่งคืน</th>
@@ -3262,7 +3262,7 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เวลายืม</th>
+                <th>เวลาส่งคำขอ</th>
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>เวลาส่งคืน</th>
