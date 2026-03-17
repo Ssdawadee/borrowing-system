@@ -1,3 +1,7 @@
+// Normalize category name: trim and lowercase
+function normalizeCategory(name: string): string {
+  return name.trim().toLowerCase();
+}
 import { ChevronDown, ChevronUp, ClipboardList, Bell, Info, Box as BoxIcon, History } from 'lucide-react';
 // การ์ดกติกาการยืม (ภาษาไทย) - 3 คอลัมน์ ไม่มีปุ่มอ่านเพิ่มเติม
 const BorrowingRulesCard: React.FC = () => {
@@ -792,8 +796,12 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
   const fetchCategories = async () => {
     try {
       const response = await api.get<CategoryItem[]>('/categories');
-      const names = response.data.map((item: CategoryItem) => item.name);
-      setCategories(names.length ? names : defaultCategoryValues);
+      // กรองชื่อหมวดหมู่ไม่ให้ซ้ำ และเรียงตามชื่อ
+      // Normalize, remove duplicates, and sort
+      const normalizedNames = Array.from(
+        new Set(response.data.map((item: CategoryItem) => normalizeCategory(item.name)))
+      ).sort((a, b) => a.localeCompare(b, 'th'));
+      setCategories(normalizedNames.length ? normalizedNames : defaultCategoryValues);
     } catch {
       setCategories(defaultCategoryValues);
     }

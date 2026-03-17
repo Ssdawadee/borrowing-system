@@ -26,7 +26,20 @@ export const getErrorMessage = (error: unknown, fallback: string) => {
     if (message === 'This equipment is no longer available for approval.') {
       return 'อุปกรณ์นี้หมด ไม่พร้อมให้อนุมัติ';
     }
-
+    if (message === 'Category already exists.') {
+      return 'มีหมวดหมู่นี้อยู่แล้ว';
+    }
+    if (
+      message === 'User not found.' ||
+      message === 'Invalid credentials.' ||
+      message === 'No user found with this student ID.' ||
+      message === 'No user found with this email.'
+    ) {
+      return 'ไม่พบบัญชีผู้ใช้';
+    }
+    if (message === 'รหัสนักศึกษา อีเมล หรือรหัสผ่านไม่ถูกต้อง') {
+      return 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง';
+    }
     return message;
   }
 

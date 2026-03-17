@@ -131,10 +131,8 @@ const ensureCategoryTable = async (db: Database<sqlite3.Database, sqlite3.Statem
     )
   `);
 
-  const defaultCategories = ['Audio', 'Computing', 'Media', 'Presentation'];
-
-  for (const name of defaultCategories) {
-    await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', name);
+  function normalizeCategory(name: string): string {
+    return name.trim().toLowerCase();
   }
 
   const existingEquipmentCategories = await db.all<Array<{ category: string }>>(
@@ -142,7 +140,7 @@ const ensureCategoryTable = async (db: Database<sqlite3.Database, sqlite3.Statem
   );
 
   for (const row of existingEquipmentCategories) {
-    await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', row.category.trim());
+    await db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', normalizeCategory(row.category));
   }
 };
 
