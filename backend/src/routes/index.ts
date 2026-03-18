@@ -231,7 +231,8 @@ router.get('/equipment', async (req, res, next) => {
 	try {
 		const db = getDatabase();
 		const search = String(req.query.search || '').trim().toLowerCase();
-		const category = String(req.query.category || '').trim().toLowerCase();
+		// ใช้ normalizeCategory กับค่าที่รับมา
+		const category = req.query.category ? normalizeCategory(String(req.query.category)) : '';
 
 		const conditions: string[] = [];
 		const params: Array<string | number> = [];
@@ -242,7 +243,7 @@ router.get('/equipment', async (req, res, next) => {
 		}
 
 		if (category) {
-			conditions.push('LOWER(category) = ?');
+			conditions.push('category = ?');
 			params.push(category);
 		}
 
