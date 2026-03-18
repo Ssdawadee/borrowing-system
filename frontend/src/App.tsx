@@ -1,3 +1,72 @@
+import { toast } from 'react-toastify';
+const UserBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
+  const [records, setRecords] = useState<BorrowRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true);
+      try {
+        // ใช้ endpoint ที่ดึงเฉพาะของ user
+        const response = await api.get<BorrowRecord[]>('/api/borrow/user');
+        setRecords(response.data);
+      } catch (err) {
+        toast.error('ไม่สามารถโหลดประวัติการยืมได้');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
+
+  const completed = records.filter(
+    (r) => r.status === 'REJECTED' || r.status === 'RETURNED'
+  );
+
+  return (
+    <AppLayout user={session.user} title="ประวัติการยืม" onLogout={onLogout}>
+      <div className="glass-panel p-6">
+        <h3 className="text-2xl font-semibold text-ink mb-4">ประวัติการยืม</h3>
+        <div className="table-shell bg-white/80">
+          <table>
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ชื่ออุปกรณ์</th>
+                <th>จำนวน</th>
+                <th>วันที่ยืม</th>
+                <th>วันที่คืน</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-6">กำลังโหลด...</td></tr>
+              ) : completed.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-6">ยังไม่มีประวัติการยืมที่เสร็จสิ้น</td></tr>
+              ) : (
+                completed.map((record, idx) => (
+                  <tr key={record.id}>
+                    <td>{idx + 1}</td>
+                    <td>{record.equipment_name}</td>
+                    <td>{record.quantity}</td>
+                    <td>{formatDateDMY(record.borrow_date)}</td>
+                    <td>{formatDateDMY(record.return_date)}</td>
+                    <td>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
+                        {getStatusLabel(record.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AppLayout>
+  );
+};
 // Normalize category name: trim and lowercase
 function normalizeCategory(name: string): string {
   return name.trim().toLowerCase();
@@ -1177,6 +1246,7 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
     loadHistory();
   }, []);
 
+  // Show all requests (including rejected and returned)
   const sortedRecords = useMemo(() => {
     const items = [...records];
 
@@ -1258,10 +1328,9 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>เวลาส่งคำขอ</th>
+                  <th>จำนวน</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
-                  <th>เวลาส่งคืน</th>
                   <th>เหตุผลในการยืม</th>
                   <th>สถานะ</th>
                 </tr>
@@ -1274,10 +1343,9 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
                       <div className="font-semibold text-ink">{record.equipment_name}</div>
                       <div className="text-xs text-stone-500">{getCategoryLabel(record.category || '')}</div>
                     </td>
-                    <td>{formatTimeHM(record.borrow_date)}</td>
+                    <td>{record.quantity}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
-                    <td>{formatTimeHM(record.return_date)}</td>
                     <td>
                       <p className="max-w-[340px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                     </td>
@@ -1308,6 +1376,14 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [submittingId, setSubmittingId] = useState<number | null>(null);
+  // Modal state for return confirmation
+  const [returnConfirmDialog, setReturnConfirmDialog] = useState<{ id: number } | null>(null);
+
+  const runReturnConfirm = async () => {
+    if (!returnConfirmDialog) return;
+    await requestReturn(returnConfirmDialog.id);
+    setReturnConfirmDialog(null);
+  };
 
   const loadRecords = async () => {
     try {
@@ -1362,11 +1438,10 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>เวลาส่งคำขอ</th>
+                  <th>จำนวน</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>เหตุผลในการยืม</th>
-                  <th>เวลาส่งคืน</th>
                   <th>สถานะ</th>
                   <th>ยืนยันการคืน</th>
                 </tr>
@@ -1376,13 +1451,12 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                   <tr key={record.id}>
                     <td>{index + 1}</td>
                     <td>{record.equipment_name}</td>
-                    <td>{formatTimeHM(record.borrow_date)}</td>
+                    <td>{record.quantity}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
                     <td>
                       <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                     </td>
-                    <td>{formatTimeHM(record.return_date)}</td>
                     <td>
                       <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(record.status)}`}>
                         {getStatusIcon(record.status)} {getStatusLabel(record.status)}
@@ -1391,11 +1465,11 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                     <td>
                       <button
                         type="button"
-                        onClick={() => requestReturn(record.id)}
+                        onClick={() => setReturnConfirmDialog({ id: record.id })}
                         disabled={submittingId === record.id}
                         className="rounded-full bg-cardinal px-4 py-2 text-sm font-semibold text-white transition hover:bg-brick disabled:cursor-not-allowed disabled:bg-stone-300"
                       >
-                        {submittingId === record.id ? 'กำลังส่ง...' : 'ยืนยันการสั่งคืน'}
+                        {submittingId === record.id ? 'กำลังส่ง...' : 'ยืนยันการส่งคืน'}
                       </button>
                     </td>
                   </tr>
@@ -1420,11 +1494,10 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
-                  <th>เวลาส่งคำขอ</th>
+                  <th>จำนวน</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>เหตุผลในการยืม</th>
-                  <th>เวลาส่งคืน</th>
                   <th>สถานะ</th>
                 </tr>
               </thead>
@@ -1433,13 +1506,12 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                   <tr key={record.id}>
                     <td>{index + 1}</td>
                     <td>{record.equipment_name}</td>
-                    <td>{formatTimeHM(record.borrow_date)}</td>
+                    <td>{record.quantity}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
                     <td>
                       <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                     </td>
-                    <td>{formatTimeHM(record.return_date)}</td>
                     <td>
                       <span className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(record.status)}`}>
                         {getStatusIcon(record.status)} {getStatusLabel(record.status)}
@@ -1458,6 +1530,31 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
             ) : null}
           </div>
         </section>
+        {/* Modal for return confirmation */}
+        {returnConfirmDialog ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4">
+            <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white p-6 shadow-panel">
+              <h4 className="text-xl font-semibold text-ink">ยืนยันการส่งคืน</h4>
+              <p className="mt-3 text-sm text-stone-700">คุณต้องการยืนยันการส่งคืนอุปกรณ์นี้ใช่หรือไม่?</p>
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReturnConfirmDialog(null)}
+                  className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={runReturnConfirm}
+                  className="rounded-full bg-cardinal px-4 py-2 text-sm font-semibold text-white transition hover:bg-brick"
+                >
+                  ยืนยัน
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </AppLayout>
   );
@@ -1498,7 +1595,7 @@ const UserDashboardPage = ({ session, onLogout }: { session: Session; onLogout: 
         <FloatingAlerts error={error} />
         <div className="grid gap-5 md:grid-cols-3">
           <StatCard label="กำลังยืมอยู่" value={data?.stats.borrowedCount || 0} icon={BookOpen} />
-          <StatCard label="ประวัติการยืม" value={data?.stats.pendingCount || 0} accent="from-amber-400 to-orange-500" icon={History} />
+          <StatCard label="ประวัติการยืม" value={data?.stats.totalRequests || 0} accent="from-amber-400 to-orange-500" icon={History} />
           <StatCard label="อุปกรณ์พร้อมยืม" value={data?.stats.availableEquipment || 0} accent="from-emerald-500 to-teal-600" icon={BoxIcon} />
         </div>
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -1570,7 +1667,7 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
       id: item.id,
       user_id: 0,
       equipment_id: 0,
-      quantity: undefined,
+      quantity: item.quantity,
       borrow_date: item.borrow_date,
       due_date: item.due_date,
       return_date: undefined,
@@ -1667,10 +1764,8 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
                   <th>ผู้ยืม</th>
                   <th>อุปกรณ์</th>
                   <th>จำนวนที่ยืม</th>
-                  <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
-                  <th>เวลาส่งคืน</th>
                   <th>เหตุผลการยืม</th>
                   <th>สถานะ</th>
                 </tr>
@@ -1685,10 +1780,8 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
                     </td>
                     <td>{request.equipment_name}</td>
                     <td>{request.quantity !== undefined ? request.quantity : '-'}</td>
-                    <td>{formatTimeHM(request.borrow_date)}</td>
                     <td>{formatDateDMY(request.borrow_date)}</td>
                     <td>{formatDateDMY(request.due_date)}</td>
-                    <td>{request.return_date ? formatTimeHM(request.return_date) : '-'}</td>
                     <td>
                       <p className="max-w-[360px] text-sm text-stone-700">{request.borrow_reason || '-'}</p>
                     </td>
@@ -1702,11 +1795,11 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
               </tbody>
             </table>
           </div>
-          {!filteredPendingRequests.length ? (
+          {!filteredPendingRequests.length && (
             <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-6 text-center text-sm text-stone-500">
               ไม่พบข้อมูล
             </div>
-          ) : null}
+          )}
         </section>
       </div>
     </AppLayout>
@@ -2665,10 +2758,8 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เวลาส่งคำขอ</th>
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
-                <th>เวลาส่งคืน</th>
                 <th>เหตุผลการยืม</th>
                 <th>สถานะ</th>
                 <th>การดำเนินการ</th>
@@ -2684,10 +2775,8 @@ const ApproveRequestsPage = ({ session, onLogout }: { session: Session; onLogout
                   </td>
                   <td>{record.equipment_name ?? '-'}</td>
                   <td>{record.quantity ?? 1}</td>
-                  <td>{formatTimeHM(record.borrow_date)}</td>
                   <td>{formatDateDMY(record.borrow_date)}</td>
                   <td>{formatDateDMY(record.due_date)}</td>
-                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>{record.borrow_reason ?? '-'}</td>
                   <td>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
@@ -2919,13 +3008,11 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เวลาส่งคำขอ</th>
+                {/* <th>เวลาส่งคำขอ</th> */}
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
-                <th>เวลาส่งคืน</th>
                 <th>เหตุผลการยืม</th>
                 <th>สถานะ</th>
-                <th>เวลาอนุมัติการยืม</th>
                 <th>การดำเนินการ</th>
               </tr>
             </thead>
@@ -2941,10 +3028,8 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
                   </td>
                   <td>{record.equipment_name}</td>
                   <td>{record.quantity ?? 1}</td>
-                  <td>{formatTimeHM(record.borrow_date)}</td>
                   <td>{formatDateDMY(record.borrow_date)}</td>
                   <td className={isOverdue ? 'font-semibold text-red-600' : ''}>{formatDateDMY(record.due_date)}{isOverdue ? ' ⚠️' : ''}</td>
-                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>
                     <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                   </td>
@@ -2953,7 +3038,6 @@ const ConfirmReturnsPage = ({ session, onLogout }: { session: Session; onLogout:
                       {getStatusIcon(record.status)} {getStatusLabel(record.status)}
                     </span>
                   </td>
-                  <td>{formatTimeHM(record.approved_at)}</td>
                   <td>
                     <button
                       type="button"
@@ -3262,10 +3346,8 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
                 <th>ผู้ยืม</th>
                 <th>อุปกรณ์</th>
                 <th>จำนวนที่ยืม</th>
-                <th>เวลาส่งคำขอ</th>
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
-                <th>เวลาส่งคืน</th>
                 <th>เหตุผลการยืม</th>
                 <th>สถานะ</th>
               </tr>
@@ -3280,10 +3362,8 @@ const AdminBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLog
                   </td>
                   <td>{record.equipment_name}</td>
                   <td>{record.quantity ?? 1}</td>
-                  <td>{formatTimeHM(record.borrow_date)}</td>
                   <td>{formatDateDMY(record.borrow_date)}</td>
                   <td>{formatDateDMY(record.due_date)}</td>
-                  <td>{formatTimeHM(record.return_date)}</td>
                   <td>
                     <p className="max-w-[360px] text-sm text-stone-700">{record.borrow_reason || '-'}</p>
                   </td>
@@ -3381,6 +3461,14 @@ const App = () => {
         element={
           <RequireAuth session={session} role="user">
             {session ? <BorrowHistoryPage session={session} onLogout={handleLogout} /> : null}
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/user/borrow-history"
+        element={
+          <RequireAuth session={session} role="user">
+            {session ? <UserBorrowHistoryPage session={session} onLogout={handleLogout} /> : null}
           </RequireAuth>
         }
       />
