@@ -1373,6 +1373,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
+                  <th>จำนวน</th>
                   <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
@@ -1387,6 +1388,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                   <tr key={record.id}>
                     <td>{index + 1}</td>
                     <td>{record.equipment_name}</td>
+                    <td>{record.quantity}</td>
                     <td>{formatTimeHM(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
@@ -1431,6 +1433,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
+                  <th>จำนวน</th>
                   <th>เวลาส่งคำขอ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
@@ -1444,6 +1447,7 @@ const ReturnEquipmentPage = ({ session, onLogout }: { session: Session; onLogout
                   <tr key={record.id}>
                     <td>{index + 1}</td>
                     <td>{record.equipment_name}</td>
+                    <td>{record.quantity}</td>
                     <td>{formatTimeHM(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.borrow_date)}</td>
                     <td>{formatDateDMY(record.due_date)}</td>
