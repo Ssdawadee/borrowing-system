@@ -35,7 +35,6 @@ const navByRole = {
     { label: 'รายการอุปกรณ์', to: '/equipment', icon: Box as React.ComponentType<{ className?: string }> },
     { label: 'คำขอยืมของฉัน', to: '/history', icon: ClipboardList as React.ComponentType<{ className?: string }> },
     { label: 'คืนอุปกรณ์', to: '/returns', icon: Undo2 as React.ComponentType<{ className?: string }> },
-    { label: 'ประวัติการยืม', to: '/user/borrow-history', icon: History as React.ComponentType<{ className?: string }> },
   ],
   admin: [
     { label: 'แดชบอร์ด', to: '/admin/dashboard', icon: Home as React.ComponentType<{ className?: string }> },

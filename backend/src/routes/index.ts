@@ -1,7 +1,4 @@
-// Normalize category name: trim and lowercase
-function normalizeCategory(name: string): string {
-	return name.trim().toLowerCase();
-}
+
 import bcrypt from 'bcryptjs';
 import express from 'express';
 import jwt, { type SignOptions } from 'jsonwebtoken';
@@ -12,6 +9,12 @@ import { getDatabase } from '../config/database';
 import { AuthenticatedUser, BorrowStatus, EquipmentCondition, UserRole } from '../types';
 
 const router = express.Router();
+
+
+// Normalize category name: trim and lowercase
+function normalizeCategory(name: string): string {
+	return name.trim().toLowerCase();
+}
 
 const buildToken = (user: AuthenticatedUser) =>
 	jwt.sign(normalizeUser(user), config.JWT_SECRET, {
@@ -824,11 +827,13 @@ router.get('/dashboard/user', authMiddleware, async (req, res, next) => {
 			borrowedCount: number;
 			pendingCount: number;
 			availableEquipment: number;
+			totalRequests: number;
 		}>(
 			`SELECT
 				 SUM(CASE WHEN b.status = 'APPROVED' THEN 1 ELSE 0 END) as borrowedCount,
 				 SUM(CASE WHEN b.status = 'PENDING' THEN 1 ELSE 0 END) as pendingCount,
-				 (SELECT COUNT(*) FROM equipment WHERE available_quantity > 0) as availableEquipment
+				 (SELECT COUNT(*) FROM equipment WHERE available_quantity > 0) as availableEquipment,
+				 COUNT(*) as totalRequests
 			 FROM borrows b
 			 WHERE b.user_id = ?`,
 			user.id
@@ -870,6 +875,7 @@ router.get('/dashboard/user', authMiddleware, async (req, res, next) => {
 				borrowedCount: stats?.borrowedCount || 0,
 				pendingCount: stats?.pendingCount || 0,
 				availableEquipment: stats?.availableEquipment || 0,
+				totalRequests: stats?.totalRequests || 0,
 			},
 			reminders,
 			recentBorrows,
@@ -899,7 +905,7 @@ router.get('/dashboard/admin', authMiddleware, roleMiddleware(['admin']), async 
 		);
 
 		const pendingRequests = await db.all(
-			`SELECT b.id, b.status, b.borrow_date, b.due_date, b.borrow_reason, u.name as user_name, u.student_id, e.name as equipment_name
+			`SELECT b.id, b.status, b.quantity, b.borrow_date, b.due_date, b.borrow_reason, u.name as user_name, u.student_id, e.name as equipment_name
 			 FROM borrows b
 			 JOIN users u ON u.id = b.user_id
 			 JOIN equipment e ON e.id = b.equipment_id
