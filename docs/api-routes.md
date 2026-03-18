@@ -1,6 +1,6 @@
 # API Routes
 
-เอกสารนี้สรุปเส้นทาง API ที่ใช้งานจริงในโปรเจกต์ (base path: `/api`)
+เอกสารนี้สรุปเส้นทาง API ที่ใช้งานจริงในโปรเจค (base path: `/api`)
 
 ## Health
 
@@ -24,7 +24,7 @@
 - `PUT /equipment/:id` (admin)
 - `DELETE /equipment/:id` (admin)
 
-## Borrow Flow
+## Borrow
 
 - `POST /borrow/request` (user)
 - `GET /borrow/user` (user)
@@ -46,7 +46,12 @@
 - `GET /admin/users` (admin)
 - `DELETE /admin/users/:id` (admin)
 
-## Notes
+---
+### หมายเหตุ
 
-- เส้นทางที่ระบุ `(admin)` ต้องใช้บัญชีผู้ดูแล
-- เส้นทางที่ระบุ `(user)` ต้องเข้าสู่ระบบด้วยบัญชีนักศึกษา
+- เส้นทางที่มี (admin) ต้องใช้บัญชีผู้ดูแลระบบ
+- เส้นทางที่มี (user) ต้องเข้าสู่ระบบด้วยบัญชีนักศึกษา
+- `/borrow/all` และ `/borrows/history` เป็น endpoint สำหรับ admin (ดู backend/src/routes/index.ts)
+- `/dashboard/user` และ `/dashboard/admin` เป็น dashboard summary
+
+อัปเดตล่าสุด: มีนาคม 2026
