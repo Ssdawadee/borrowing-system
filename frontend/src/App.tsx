@@ -1258,6 +1258,7 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
                 <tr>
                   <th>ลำดับ</th>
                   <th>อุปกรณ์</th>
+                  <th>จำนวน</th>
                   <th>วันที่/เวลาที่อนุมัติ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
@@ -1274,6 +1275,7 @@ const BorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: 
                       <div className="font-semibold text-ink">{record.equipment_name}</div>
                       <div className="text-xs text-stone-500">{getCategoryLabel(record.category || '')}</div>
                     </td>
+                    <td>{record.quantity}</td>
                     <td>
                       {record.approved_at
                         ? (
