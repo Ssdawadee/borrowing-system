@@ -493,7 +493,7 @@ router.post('/borrow/request', authMiddleware, async (req, res, next) => {
 			user.id,
 			equipmentId,
 			requestQuantity,
-			new Date().toISOString(),
+			borrowDateValue.toISOString(),
 			dueDateValue.toISOString(),
 			reason.trim()
 		);
