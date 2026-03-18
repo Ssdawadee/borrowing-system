@@ -1,3 +1,71 @@
+import { toast } from 'react-toastify';
+const UserBorrowHistoryPage = ({ session, onLogout }: { session: Session; onLogout: () => void }) => {
+  const [records, setRecords] = useState<BorrowRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get<BorrowRecord[]>('/api/borrows/history');
+        setRecords(response.data);
+      } catch (err) {
+        toast.error('ไม่สามารถโหลดประวัติการยืมได้');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
+
+  const completed = records.filter(
+    (r) => r.status === 'REJECTED' || r.status === 'RETURNED' || r.status === 'CONFIRMED_RETURN'
+  );
+
+  return (
+    <AppLayout user={session.user} title="ประวัติการยืม" onLogout={onLogout}>
+      <div className="glass-panel p-6">
+        <h3 className="text-2xl font-semibold text-ink mb-4">ประวัติการยืม</h3>
+        <div className="table-shell bg-white/80">
+          <table>
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>ชื่ออุปกรณ์</th>
+                <th>จำนวน</th>
+                <th>วันที่ยืม</th>
+                <th>วันที่คืน</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-6">กำลังโหลด...</td></tr>
+              ) : completed.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-6">ยังไม่มีประวัติการยืมที่เสร็จสิ้น</td></tr>
+              ) : (
+                completed.map((record, idx) => (
+                  <tr key={record.id}>
+                    <td>{idx + 1}</td>
+                    <td>{record.equipment_name}</td>
+                    <td>{record.quantity}</td>
+                    <td>{formatDateDMY(record.borrow_date)}</td>
+                    <td>{formatDateDMY(record.return_date)}</td>
+                    <td>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(record.status)}`}>
+                        {getStatusLabel(record.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AppLayout>
+  );
+};
 // Normalize category name: trim and lowercase
 function normalizeCategory(name: string): string {
   return name.trim().toLowerCase();
@@ -3396,6 +3464,14 @@ const App = () => {
         element={
           <RequireAuth session={session} role="user">
             {session ? <BorrowHistoryPage session={session} onLogout={handleLogout} /> : null}
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/user/borrow-history"
+        element={
+          <RequireAuth session={session} role="user">
+            {session ? <UserBorrowHistoryPage session={session} onLogout={handleLogout} /> : null}
           </RequireAuth>
         }
       />
