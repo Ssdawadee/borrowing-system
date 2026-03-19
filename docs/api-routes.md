@@ -1,57 +1,51 @@
-# API Routes
 
-เอกสารนี้สรุปเส้นทาง API ที่ใช้งานจริงในโปรเจค (base path: `/api`)
+# API Routes (Base: `/api`)
 
 ## Health
-
-- `GET /health`
+- `GET /health` — ตรวจสอบสถานะ API
 
 ## Authentication
+- `POST /auth/register` — สมัครสมาชิก (user)
+- `POST /auth/login` — เข้าสู่ระบบ (user, admin)
 
-- `POST /auth/register`
-- `POST /auth/login`
+## Categories (หมวดหมู่อุปกรณ์)
+- `GET /categories` — ดูหมวดหมู่ทั้งหมด
+- `POST /categories` — เพิ่มหมวดหมู่ (admin)
+- `DELETE /categories/:id` — ลบหมวดหมู่ (admin)
 
-## Categories
+## Equipment (อุปกรณ์)
+- `GET /equipment?search=&category=` — ค้นหา/กรองอุปกรณ์ (รองรับ query param)
+- `POST /equipment` — เพิ่มอุปกรณ์ (admin)
+- `PUT /equipment/:id` — แก้ไขอุปกรณ์ (admin)
+- `DELETE /equipment/:id` — ลบอุปกรณ์ (admin)
 
-- `GET /categories`
-- `POST /categories` (admin)
-- `DELETE /categories/:id` (admin)
+## Borrow (การยืม-คืน)
+- `POST /borrow/request` — ส่งคำขอยืม (user)
+- `GET /borrow/user` — ดูประวัติยืมของตนเอง (user)
+- `GET /borrow/all` — ดูคำขอยืมทั้งหมด (admin)
+- `GET /borrows/history?page=&limit=` — ดูประวัติยืม-คืนที่เสร็จสิ้น (admin, รองรับ pagination)
+- `DELETE /borrow/completed` — ลบประวัติยืม-คืนที่เสร็จสิ้น (admin)
+- `PUT /borrow/approve/:id` — อนุมัติคำขอยืม (admin)
+- `PUT /borrow/reject/:id` — ปฏิเสธคำขอยืม (admin)
+- `PUT /borrow/return/:id` — แจ้งคืนอุปกรณ์ (user)
+- `PUT /borrow/confirm-return/:id` — ยืนยันการคืน (admin)
 
-## Equipment
+## Dashboards (สรุปข้อมูล)
+- `GET /dashboard/user` — dashboard นักศึกษา (user)
+- `GET /dashboard/admin` — dashboard ผู้ดูแล (admin)
 
-- `GET /equipment`
-- `POST /equipment` (admin)
-- `PUT /equipment/:id` (admin)
-- `DELETE /equipment/:id` (admin)
-
-## Borrow
-
-- `POST /borrow/request` (user)
-- `GET /borrow/user` (user)
-- `GET /borrow/all` (admin)
-- `GET /borrows/history` (admin)
-- `DELETE /borrow/completed` (admin)
-- `PUT /borrow/approve/:id` (admin)
-- `PUT /borrow/reject/:id` (admin)
-- `PUT /borrow/return/:id` (user)
-- `PUT /borrow/confirm-return/:id` (admin)
-
-## Dashboards
-
-- `GET /dashboard/user` (user)
-- `GET /dashboard/admin` (admin)
-
-## Admin Users
-
-- `GET /admin/users` (admin)
-- `DELETE /admin/users/:id` (admin)
+## Admin Users (จัดการผู้ใช้)
+- `GET /admin/users` — ดูรายชื่อนักศึกษาทั้งหมด (admin)
+- `DELETE /admin/users/:id` — ลบบัญชีนักศึกษา (admin)
 
 ---
-### หมายเหตุ
-
-- เส้นทางที่มี (admin) ต้องใช้บัญชีผู้ดูแลระบบ
-- เส้นทางที่มี (user) ต้องเข้าสู่ระบบด้วยบัญชีนักศึกษา
-- `/borrow/all` และ `/borrows/history` เป็น endpoint สำหรับ admin (ดู backend/src/routes/index.ts)
-- `/dashboard/user` และ `/dashboard/admin` เป็น dashboard summary
+### หมายเหตุสำคัญ
+- (admin) = ต้องเข้าสู่ระบบด้วยบัญชีผู้ดูแล
+- (user) = ต้องเข้าสู่ระบบด้วยบัญชีนักศึกษา
+- `/equipment` รองรับ query param: `search`, `category`
+- `/borrows/history` รองรับ query param: `page`, `limit` (default: 10)
+- `/borrow/all`, `/borrows/history`, `/borrow/completed` เฉพาะ admin
+- `/dashboard/user` เฉพาะ user, `/dashboard/admin` เฉพาะ admin
+- `/borrow/request`, `/borrow/user`, `/borrow/return/:id` เฉพาะ user
 
 อัปเดตล่าสุด: มีนาคม 2026
