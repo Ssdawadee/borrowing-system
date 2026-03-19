@@ -35,12 +35,12 @@ const isValidPhone = (value: string) => /^\d{10}$/.test(value);
 
 router.get('/categories', async (_req, res, next) => {
 	try {
-		const db = getDatabase();
-		const categories = await db.all<Array<{ id: number; name: string }>>(
-			'SELECT id, name FROM categories ORDER BY name ASC'
-		);
-
-		return res.json(categories);
+		   const db = getDatabase();
+		   const categories = await db.all<Array<{ id: number; name: string }>>(
+			   'SELECT id, name FROM categories ORDER BY name ASC'
+		   );
+		   console.log('[GET /categories] categories:', categories);
+		   return res.json(categories);
 	} catch (error) {
 		next(error);
 	}
@@ -48,30 +48,38 @@ router.get('/categories', async (_req, res, next) => {
 
 router.post('/categories', authMiddleware, roleMiddleware(['admin']), async (req, res, next) => {
 	try {
-		const { name } = req.body as { name?: string };
+		   const { name } = req.body as { name?: string };
 
-		if (!name?.trim()) {
-			return res.status(400).json({ message: 'Category name is required.' });
-		}
+		   if (!name?.trim()) {
+			   return res.status(400).json({ message: 'Category name is required.' });
+		   }
 
-		const categoryName = normalizeCategory(name);
-		const db = getDatabase();
-		const existingCategory = await db.get<{ id: number }>(
-			'SELECT id FROM categories WHERE name = ?',
-			categoryName
-		);
+		   const categoryName = normalizeCategory(name);
+		   const db = getDatabase();
+		   const existingCategory = await db.get<{ id: number }>(
+			   'SELECT id FROM categories WHERE name = ?',
+			   categoryName
+		   );
 
-		if (existingCategory) {
-			return res.status(409).json({ message: 'Category already exists.' });
-		}
+		   if (existingCategory) {
+			   return res.status(409).json({ message: 'Category already exists.' });
+		   }
 
-		const result = await db.run('INSERT INTO categories (name) VALUES (?)', categoryName);
-		const category = await db.get<{ id: number; name: string }>(
-			'SELECT id, name FROM categories WHERE id = ?',
-			result.lastID
-		);
+		   // log ก่อน insert
+		   const beforeInsert = await db.all('SELECT id, name FROM categories ORDER BY name ASC');
+		   console.log('[POST /categories] before insert:', beforeInsert);
 
-		return res.status(201).json(category);
+		   const result = await db.run('INSERT INTO categories (name) VALUES (?)', categoryName);
+		   const category = await db.get<{ id: number; name: string }>(
+			   'SELECT id, name FROM categories WHERE id = ?',
+			   result.lastID
+		   );
+
+		   // log หลัง insert
+		   const afterInsert = await db.all('SELECT id, name FROM categories ORDER BY name ASC');
+		   console.log('[POST /categories] after insert:', afterInsert);
+
+		   return res.status(201).json(category);
 	} catch (error) {
 		next(error);
 	}

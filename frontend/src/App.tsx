@@ -836,17 +836,18 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [alertKey, setAlertKey] = useState(0);
-    useEffect(() => {
-      if (!error && !message) return;
-      const timeoutId = window.setTimeout(() => {
-        setError('');
-        setMessage('');
-      }, 3000);
-      return () => window.clearTimeout(timeoutId);
-    }, [error, message]);
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
   const [borrowForm, setBorrowForm] = useState<BorrowRequestFormState>(initialBorrowForm);
   const [submissionState, setSubmissionState] = useState<'idle' | 'submitting' | 'success'>('idle');
+
+  useEffect(() => {
+    if (!error && !message) return;
+    const timeoutId = window.setTimeout(() => {
+      setError('');
+      setMessage('');
+    }, 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [error, message]);
 
   const fetchEquipment = async () => {
     try {
@@ -971,12 +972,22 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
 
     setSubmissionState('submitting');
 
+    // DEBUG LOG: ดู payload ที่จะส่งไป backend
+    const trimmedReason = borrowForm.reason.trim();
+    console.log('[BorrowRequest] payload', {
+      equipmentId: selectedEquipment.id,
+      borrowDate: borrowDateForApi,
+      dueDate: dueDateForApi,
+      reason: trimmedReason,
+      quantity: borrowForm.quantity,
+    });
+
     try {
       await api.post('/borrow/request', {
         equipmentId: selectedEquipment.id,
         borrowDate: borrowDateForApi,
         dueDate: dueDateForApi,
-        reason: borrowForm.reason,
+        reason: trimmedReason,
         quantity: borrowForm.quantity,
       });
       setSubmissionState('success');
@@ -990,49 +1001,16 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
     }
   };
 
-  if (submissionState !== 'idle') {
-    return (
-      <AppLayout user={session.user} title="รายการอุปกรณ์" onLogout={onLogout}>
-        <div className="flex min-h-[70vh] items-center justify-center">
-          <div className="glass-panel w-full max-w-2xl p-10 text-center">
-            {submissionState === 'submitting' ? (
-              <>
-                <div className="mx-auto mb-6 h-16 w-16 animate-spin rounded-full border-4 border-cardinal/20 border-t-cardinal" />
-                <h3 className="text-3xl font-semibold text-ink">กำลังส่งคำขอยืม</h3>
-                <p className="mt-4 text-stone-600">
-                  ระบบกำลังบันทึกวันที่ยืม วันคืน และเหตุผลในการยืมของคุณ
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">
-                  ✓
-                </div>
-                <h3 className="text-3xl font-semibold text-ink">ส่งคำขอเรียบร้อยแล้ว</h3>
-                <p className="mt-4 text-stone-600">คำขอยืมของคุณถูกส่งให้ผู้ดูแลตรวจสอบแล้ว</p>
-                <div className="mt-8 flex justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSubmissionState('idle')}
-                    className="rounded-2xl border border-cardinal/20 bg-white px-5 py-3 font-semibold text-cardinal"
-                  >
-                    กลับไปรายการอุปกรณ์
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => window.location.assign('/history')}
-                    className="rounded-2xl bg-cardinal px-5 py-3 font-semibold text-white"
-                  >
-                    ไปที่ประวัติการยืม
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </AppLayout>
+  // ห้าม early return ก่อน hook
+  // ให้ใช้ conditional rendering หลัง hook
+
+  // Filter equipment by selected category (normalize both sides)
+  const filteredEquipment = React.useMemo(() => {
+    if (category === 'all') return equipment;
+    return equipment.filter(
+      (item) => normalizeCategory(item.category) === category
     );
-  }
+  }, [equipment, category]);
 
   return (
     <AppLayout user={session.user} title="รายการอุปกรณ์" onLogout={onLogout}>
@@ -1062,12 +1040,12 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
         <FloatingAlerts key={alertKey} error={error} success={message} />
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {equipment.length === 0 ? (
+          {filteredEquipment.length === 0 ? (
             <div className="col-span-full text-center text-stone-500 py-16 text-lg">
               ไม่พบอุปกรณ์ในหมวดหมู่นี้
             </div>
           ) : (
-            equipment.map((item: EquipmentItem) => (
+            filteredEquipment.map((item: EquipmentItem) => (
               <article key={item.id} className="glass-panel overflow-hidden p-0">
                 <div className="relative h-52 bg-stone-200">
                   <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
