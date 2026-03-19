@@ -1,5 +1,22 @@
 # System Flow (โฟลว์หลักของระบบ)
 
+## ภาพรวม Sequence Diagram
+
+```mermaid
+sequenceDiagram
+	participant U as User
+	participant F as Frontend
+	participant B as Backend
+	participant DB as Database
+
+	U->>F: กรอกข้อมูล/กดปุ่ม
+	F->>B: เรียก API (แนบ token ถ้ามี)
+	B->>DB: อ่าน/เขียนข้อมูล
+	DB-->>B: ส่งข้อมูลกลับ
+	B-->>F: ส่งผลลัพธ์ (JSON/Status)
+	F-->>U: แสดงผล/แจ้งเตือน
+```
+
 ## 1. User Login
 - User กรอกข้อมูลเข้าสู่ระบบ (email/student_id + password)
 - Frontend ส่งข้อมูลไป backend (`/api/auth/login`)
@@ -38,6 +55,29 @@
 - Backend ตรวจสอบ token + role + เงื่อนไข
 - Backend อัปเดตสถานะใน DB (status = RETURNED)
 - Backend ส่งผลลัพธ์กลับ
+
+---
+
+## Edge Cases & สถานะผิดปกติ
+
+- **ยืมเกินจำนวน:**
+	- Backend ปฏิเสธ (error: จำนวนเกินที่เหลือ/อนุญาต)
+	- Frontend แจ้งเตือนทันที
+- **คืนช้า:**
+	- ระบบแจ้งเตือน (reminder) อัตโนมัติ (ถ้ามี)
+	- สถานะ borrow อาจถูก flag ว่า overdue
+- **สถานะผิดปกติ:**
+	- เช่น พยายามคืนของที่ไม่ได้อยู่ในสถานะ APPROVED → Backend ปฏิเสธ
+	- พยายามอนุมัติ/ปฏิเสธ request ที่ไม่ใช่ PENDING → Backend ปฏิเสธ
+
+---
+
+## Flow เสริม (ฟีเจอร์รอง)
+
+### 6. ระบบแจ้งเตือน (Reminder)
+- Backend ตรวจสอบ borrow ที่ใกล้ครบกำหนด/เกินกำหนด
+- ส่ง reminder (เช่น notification) ถึง user
+- Frontend แสดง reminder ใน dashboard
 
 ---
 
