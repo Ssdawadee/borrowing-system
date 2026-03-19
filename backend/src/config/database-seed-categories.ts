@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import sqlite3 from 'sqlite3';
+import { Database, open } from 'sqlite';
 // ...existing code...
 
 const schemaPath = path.resolve(process.cwd(), '..', 'database', 'migrations', 'initial-schema.sql');
