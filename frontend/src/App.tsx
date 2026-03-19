@@ -1060,36 +1060,42 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
           </div>
         </div>
         <FloatingAlerts key={alertKey} error={error} success={message} />
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {equipment.map((item: EquipmentItem) => (
-            <article key={item.id} className="glass-panel overflow-hidden p-0">
-              <div className="relative h-52 bg-stone-200">
-                <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
-                <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-ink">
-                  {getCategoryLabel(item.category)}
-                </span>
 
-              </div>
-              <div className="space-y-3 p-4">
-                <h3 className="text-3xl font-semibold leading-tight text-ink">{item.name}</h3>
-                <p className="min-h-[48px] text-sm leading-6 text-stone-600">{item.description}</p>
-                <div className="text-sm">
-                  <p className="text-stone-500">คงเหลือ</p>
-                  <p className="font-semibold text-emerald-600">{item.available_quantity} / {item.total_quantity}</p>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {equipment.length === 0 ? (
+            <div className="col-span-full text-center text-stone-500 py-16 text-lg">
+              ไม่พบอุปกรณ์ในหมวดหมู่นี้
+            </div>
+          ) : (
+            equipment.map((item: EquipmentItem) => (
+              <article key={item.id} className="glass-panel overflow-hidden p-0">
+                <div className="relative h-52 bg-stone-200">
+                  <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                  <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-ink">
+                    {getCategoryLabel(item.category)}
+                  </span>
                 </div>
-                <div>
-                  <button
-                    type="button"
-                    disabled={session.user.role !== 'user' || item.available_quantity < 1}
-                    onClick={() => openBorrowDialog(item)}
-                    className="w-full rounded-2xl bg-cardinal px-8 py-3 text-lg font-semibold text-white transition hover:bg-brick disabled:cursor-not-allowed disabled:bg-stone-300"
-                  >
-                    ยืม
-                  </button>
+                <div className="space-y-3 p-4">
+                  <h3 className="text-3xl font-semibold leading-tight text-ink">{item.name}</h3>
+                  <p className="min-h-[48px] text-sm leading-6 text-stone-600">{item.description}</p>
+                  <div className="text-sm">
+                    <p className="text-stone-500">คงเหลือ</p>
+                    <p className="font-semibold text-emerald-600">{item.available_quantity} / {item.total_quantity}</p>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      disabled={session.user.role !== 'user' || item.available_quantity < 1}
+                      onClick={() => openBorrowDialog(item)}
+                      className="w-full rounded-2xl bg-cardinal px-8 py-3 text-lg font-semibold text-white transition hover:bg-brick disabled:cursor-not-allowed disabled:bg-stone-300"
+                    >
+                      ยืม
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </div>
 
         {selectedEquipment ? (
