@@ -6,8 +6,11 @@ import { config } from './env';
 
 let database: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 
+
 const schemaPath = path.resolve(process.cwd(), '..', 'database', 'migrations', 'initial-schema.sql');
 const seedPath = path.resolve(process.cwd(), '..', 'database', 'seeds', 'seed-data.sql');
+const seedCategoriesPath = path.resolve(process.cwd(), '..', 'database', 'seeds', 'seed-categories.sql');
+
 
 export const initializeDatabase = async () => {
   if (database) {
@@ -29,6 +32,8 @@ export const initializeDatabase = async () => {
   await ensureEquipmentColumns(database);
   await ensureEquipmentQuantityIntegrity(database);
   await ensureCategoryTable(database);
+  // Seed categories every time
+  await database.exec(fs.readFileSync(seedCategoriesPath, 'utf8'));
   await seedDatabase(database);
 
   return database;
