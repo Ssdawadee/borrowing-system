@@ -39,7 +39,7 @@ export const initializeDatabase = async () => {
   return database;
 };
 
-const ensureBorrowColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const ensureBorrowColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   const columns = await db.all<Array<{ name: string }>>('PRAGMA table_info(borrows)');
   const columnNames = new Set(columns.map((column) => column.name));
 
@@ -64,7 +64,7 @@ const ensureBorrowColumns = async (db: Database<sqlite3.Database, sqlite3.Statem
   }
 };
 
-const ensureUserColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const ensureUserColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   const columns = await db.all<Array<{ name: string }>>('PRAGMA table_info(users)');
   const columnNames = new Set(columns.map((column) => column.name));
 
@@ -77,7 +77,7 @@ const ensureUserColumns = async (db: Database<sqlite3.Database, sqlite3.Statemen
   }
 };
 
-const ensureBorrowRejectedStatus = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const ensureBorrowRejectedStatus = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   const table = await db.get<{ sql: string }>(
     "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'borrows'"
   );
@@ -127,7 +127,7 @@ const ensureBorrowRejectedStatus = async (db: Database<sqlite3.Database, sqlite3
   }
 };
 
-const ensureCategoryTable = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const ensureCategoryTable = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,7 +149,7 @@ const ensureCategoryTable = async (db: Database<sqlite3.Database, sqlite3.Statem
   }
 };
 
-const ensureEquipmentColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const ensureEquipmentColumns = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   const columns = await db.all<Array<{ name: string }>>('PRAGMA table_info(equipment)');
   const columnNames = new Set(columns.map((column) => column.name));
 
@@ -158,7 +158,7 @@ const ensureEquipmentColumns = async (db: Database<sqlite3.Database, sqlite3.Sta
   }
 };
 
-const ensureEquipmentQuantityIntegrity = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const ensureEquipmentQuantityIntegrity = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   await db.exec(`
     UPDATE equipment
     SET damaged_quantity = CASE
@@ -179,7 +179,7 @@ const ensureEquipmentQuantityIntegrity = async (db: Database<sqlite3.Database, s
   `);
 };
 
-const seedDatabase = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
+export const seedDatabase = async (db: Database<sqlite3.Database, sqlite3.Statement>) => {
   const existingAdmin = await db.get<{ count: number }>('SELECT COUNT(*) as count FROM users');
 
   if ((existingAdmin?.count || 0) > 0) {
