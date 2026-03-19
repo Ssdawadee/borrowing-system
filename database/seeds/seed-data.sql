@@ -10,5 +10,5 @@ VALUES
 ('โปรเจคเตอร์', 'งานนำเสนอ', 'โปรเจคเตอร์พกพาสำหรับงานประชุมและกิจกรรมชมรม', 3, 3, 'https://m.media-amazon.com/images/I/61FeT3hvIRL._AC_UF894,1000_QL80_.jpg', 'NORMAL'),
 ('แลปท็อป', 'คอมพิวเตอร์', 'แลปท็อปสำหรับนำเสนอผลงานและลงทะเบียนกิจกรรม', 4, 4, 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=800&q=80', 'NORMAL'),
 ('ลำโพง', 'เครื่องเสียง', 'ลำโพงสำหรับงานกิจกรรมกลางแจ้งและงานประชาสัมพันธ์', 4, 4, 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=800&q=80', 'NORMAL'),
-('ชุดไฟถ่ายภาพ', 'สื่อและภาพถ่าย', 'ชุดไฟสำหรับถ่ายภาพและวิดีโอในร่ม', 2, 2, 'https://m.media-amazon.com/images/I/61uPzgZ6TfL._AC_SL1500_.jpg', 'DAMAGED');
+('ชุดไฟถ่ายภาพ', 'สื่อและภาพถ่าย', 'ชุดไฟสำหรับถ่ายภาพและวิดีโอในร่ม', 2, 2, 'https://m.media-amazon.com/images/I/61uPzgZ6TfL._AC_SL1500_.jpg', 'NORMAL');
 

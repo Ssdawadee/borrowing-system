@@ -1060,36 +1060,42 @@ const EquipmentPage = ({ session, onLogout }: { session: Session; onLogout: () =
           </div>
         </div>
         <FloatingAlerts key={alertKey} error={error} success={message} />
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {equipment.map((item: EquipmentItem) => (
-            <article key={item.id} className="glass-panel overflow-hidden p-0">
-              <div className="relative h-52 bg-stone-200">
-                <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
-                <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-ink">
-                  {getCategoryLabel(item.category)}
-                </span>
 
-              </div>
-              <div className="space-y-3 p-4">
-                <h3 className="text-3xl font-semibold leading-tight text-ink">{item.name}</h3>
-                <p className="min-h-[48px] text-sm leading-6 text-stone-600">{item.description}</p>
-                <div className="text-sm">
-                  <p className="text-stone-500">คงเหลือ</p>
-                  <p className="font-semibold text-emerald-600">{item.available_quantity} / {item.total_quantity}</p>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {equipment.length === 0 ? (
+            <div className="col-span-full text-center text-stone-500 py-16 text-lg">
+              ไม่พบอุปกรณ์ในหมวดหมู่นี้
+            </div>
+          ) : (
+            equipment.map((item: EquipmentItem) => (
+              <article key={item.id} className="glass-panel overflow-hidden p-0">
+                <div className="relative h-52 bg-stone-200">
+                  <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                  <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-medium text-ink">
+                    {getCategoryLabel(item.category)}
+                  </span>
                 </div>
-                <div>
-                  <button
-                    type="button"
-                    disabled={session.user.role !== 'user' || item.available_quantity < 1}
-                    onClick={() => openBorrowDialog(item)}
-                    className="w-full rounded-2xl bg-cardinal px-8 py-3 text-lg font-semibold text-white transition hover:bg-brick disabled:cursor-not-allowed disabled:bg-stone-300"
-                  >
-                    ยืม
-                  </button>
+                <div className="space-y-3 p-4">
+                  <h3 className="text-3xl font-semibold leading-tight text-ink">{item.name}</h3>
+                  <p className="min-h-[48px] text-sm leading-6 text-stone-600">{item.description}</p>
+                  <div className="text-sm">
+                    <p className="text-stone-500">คงเหลือ</p>
+                    <p className="font-semibold text-emerald-600">{item.available_quantity} / {item.total_quantity}</p>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      disabled={session.user.role !== 'user' || item.available_quantity < 1}
+                      onClick={() => openBorrowDialog(item)}
+                      className="w-full rounded-2xl bg-cardinal px-8 py-3 text-lg font-semibold text-white transition hover:bg-brick disabled:cursor-not-allowed disabled:bg-stone-300"
+                    >
+                      ยืม
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </div>
 
         {selectedEquipment ? (
@@ -1595,7 +1601,7 @@ const UserDashboardPage = ({ session, onLogout }: { session: Session; onLogout: 
         <FloatingAlerts error={error} />
         <div className="grid gap-5 md:grid-cols-3">
           <StatCard label="กำลังยืมอยู่" value={data?.stats.borrowedCount || 0} icon={BookOpen} />
-          <StatCard label="ประวัติการยืม" value={data?.stats.totalRequests || 0} accent="from-amber-400 to-orange-500" icon={History} />
+          <StatCard label="ประวัติการยืม" value={data?.stats.pendingCount || 0} accent="from-amber-400 to-orange-500" icon={History} />
           <StatCard label="อุปกรณ์พร้อมยืม" value={data?.stats.availableEquipment || 0} accent="from-emerald-500 to-teal-600" icon={BoxIcon} />
         </div>
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -1667,7 +1673,7 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
       id: item.id,
       user_id: 0,
       equipment_id: 0,
-      quantity: item.quantity,
+      quantity: undefined,
       borrow_date: item.borrow_date,
       due_date: item.due_date,
       return_date: undefined,
