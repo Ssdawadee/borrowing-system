@@ -71,6 +71,7 @@ erDiagram
 		INTEGER is_active
 		TEXT created_at
 	}
+
 	equipment {
 		INTEGER id PK
 		TEXT name
@@ -82,11 +83,13 @@ erDiagram
 		TEXT image_url
 		TEXT status
 	}
+
 	categories {
 		INTEGER id PK
 		TEXT name UNIQUE
 		TEXT created_at
 	}
+
 	borrows {
 		INTEGER id PK
 		INTEGER user_id FK
@@ -101,6 +104,7 @@ erDiagram
 		TEXT borrow_reason
 		TEXT status
 	}
+
 	users ||--o{ borrows : "id = user_id"
 	equipment ||--o{ borrows : "id = equipment_id"
 	categories ||--o{ equipment : "name = category"
