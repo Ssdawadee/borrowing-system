@@ -1601,7 +1601,7 @@ const UserDashboardPage = ({ session, onLogout }: { session: Session; onLogout: 
         <FloatingAlerts error={error} />
         <div className="grid gap-5 md:grid-cols-3">
           <StatCard label="กำลังยืมอยู่" value={data?.stats.borrowedCount || 0} icon={BookOpen} />
-          <StatCard label="ประวัติการยืม" value={data?.stats.totalRequests || 0} accent="from-amber-400 to-orange-500" icon={History} />
+          <StatCard label="ประวัติการยืม" value={data?.stats.pendingCount || 0} accent="from-amber-400 to-orange-500" icon={History} />
           <StatCard label="อุปกรณ์พร้อมยืม" value={data?.stats.availableEquipment || 0} accent="from-emerald-500 to-teal-600" icon={BoxIcon} />
         </div>
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -1673,7 +1673,7 @@ const AdminDashboardPage = ({ session, onLogout }: { session: Session; onLogout:
       id: item.id,
       user_id: 0,
       equipment_id: 0,
-      quantity: item.quantity,
+      quantity: undefined,
       borrow_date: item.borrow_date,
       due_date: item.due_date,
       return_date: undefined,
